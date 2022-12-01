@@ -15,16 +15,18 @@ import 'overviewPage/overviewTab.dart';
 import 'drawer.dart';
 import 'overviewPage/raceTab.dart';
 
+const ip = '192.168.0.139:8000';//'192.168.59.179:8000';//
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const storage = FlutterSecureStorage();
 
 String selectedCharacter = "Jeff";
 
-Completer _PlayerDataCompleter = Completer();
-Future playerDataFuture = _PlayerDataCompleter.future;
+Completer _playerDataCompleter = Completer();
+Future playerDataFuture = _playerDataCompleter.future;
 
-Completer _GameDataCompleter = Completer();
-Future gameDataFuture = _GameDataCompleter.future;
+Completer _gameDataCompleter = Completer();
+Future gameDataFuture = _gameDataCompleter.future;
 
 Map tabIndexToNameMap = {
   0: 0
@@ -37,7 +39,7 @@ void main() {
       id = await openLoginPage(),
     },
     fetchPlayerData(id).then((playerData) => {
-      _PlayerDataCompleter.complete(playerData),
+      _playerDataCompleter.complete(playerData),
     })
     .catchError((e) => {
       showToast(e),
@@ -51,7 +53,7 @@ void main() {
 
 Future<void> fetchGameData() async {
   http.Response gameData = await webRequest(false, "gameinfo.json", null);
-  _GameDataCompleter.complete(jsonDecode(gameData.body));
+  _gameDataCompleter.complete(jsonDecode(utf8.decode(gameData.bodyBytes)));
   return Future.value();
 }
 
@@ -76,20 +78,10 @@ Future<dynamic> fetchPlayerData(playerId) async {
   };
 
   return await webRequest(true, 'client/cms/playerData', requestObj);
-  /*
-  var url = Uri.http('192.168.0.139:8000', 'client/cms/playerData');
-  var response = await http.post(url, body: requestObj);
-  if (response.statusCode != 200) {
-    showToast("Login Failed");
-    return Future.error("Couldn't fetch playerData");
-  } else {
-    return Future.value(jsonDecode(response.body));
-  }
-  */
 }
 
 Future<dynamic> webRequest(bool post, String destination, Object? requestObj) async {
-  var url = Uri.http('192.168.0.139:8000', destination);
+  var url = Uri.http(ip, destination);
   var response;
   var parsedObj = jsonEncode(requestObj);
   if(post) {
@@ -104,7 +96,7 @@ Future<dynamic> webRequest(bool post, String destination, Object? requestObj) as
     return Future.error("http request failed: ${response.statusCode}");
   } else {
       if(post) {
-        return Future.value(jsonDecode(response.body));
+        return Future.value(jsonDecode(utf8.decode(response.bodyBytes)));
       } else {
         return Future.value(response);
       }
@@ -145,7 +137,6 @@ class _MyHomePageState extends State<MyHomePage> {
     OverviewTab,
     AbilitiesTab,
     BackstoryTab,
-    RaceTab,
   ];
 
   @override
@@ -229,10 +220,8 @@ bool needsTabs(localPlayerData) {
     return false;
   }
   if((player["abilities"] != null && player["abilities"].length > 0) || player["backstory"] != "") {
-    log("Needs tabs");
     return true;
   }
-  log("Does not need tabs");
   return false;
 }
 
@@ -240,7 +229,7 @@ DropdownButton getPlayerDropdown (snapshot, _setState) {
   List<DropdownMenuItem> items = [];
   //log(snapshot.data.toString());
   for(int i = 0; i < snapshot.data["characters"].length; i++) {
-    items.add(DropdownMenuItem(value: snapshot.data["characters"][i]["name"],child: Text(snapshot.data["characters"][i]["name"], style: TextStyle(color: Colors.black),),));
+    items.add(DropdownMenuItem(value: snapshot.data["characters"][i]["name"],child: Text(snapshot.data["characters"][i]["name"], style: const TextStyle(color: Colors.black),),));
   }
   return DropdownButton(
     style: const TextStyle(),
@@ -256,11 +245,11 @@ DropdownButton getPlayerDropdown (snapshot, _setState) {
 }
 
 
-Map? getObjectByAttribute(Arr, name, attribute) {
-  for(int i = 0; i < Arr.length; i++) {
-    if(Arr[i][attribute].toString() == name.toString()) {
+Map? getObjectByAttribute(arr, name, attribute) {
+  for(int i = 0; i < arr.length; i++) {
+    if(arr[i][attribute].toString() == name.toString()) {
       //log(playerData["characters"][i].toString());
-      return Arr[i];
+      return arr[i];
     }
   }
   return null;

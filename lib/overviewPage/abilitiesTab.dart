@@ -1,5 +1,6 @@
 import 'package:cms_for_real/main.dart';
 import 'package:flutter/material.dart';
+import 'dart:developer';
 
 FutureBuilder AbilitiesTab() {
   return FutureBuilder(
@@ -65,11 +66,31 @@ List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
   }
   for(int i = 0; i < localCharacter["abilities"].length; i++) {
     Map? abilityObj = getObjectByAttribute(localGameInfo["abilities"], localCharacter["abilities"][i], "name");
+    log(abilityObj.toString());
     abilityObj ??= {"description": "Could not find ability in GameData"};
     widgets.add(Card(
           child: Column(
             children: [
-              Text(localCharacter["abilities"][i].toString()),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 5.0),
+                    child: Text(
+                      localCharacter["abilities"][i].toString(),
+                      style: const TextStyle(
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 5.0),
+                    child: Column(
+                      children: buildAffectedStatsColumn(abilityObj),
+                    ),
+                  )
+                ],
+              ),
               Align(
                 alignment: Alignment.topLeft,
                 child: Padding(
@@ -84,4 +105,12 @@ List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
       );
   }
   return widgets;
+}
+
+List<Widget> buildAffectedStatsColumn(abilityObj) {
+  List<Widget> output = [];
+  for(int i = 0; i < abilityObj['affectedStats'].length; i++) {
+    output.add(Text('${abilityObj["affectedStats"][i]["name"].toString()}: ${abilityObj["affectedStats"][i]["value"].toString()}'),);
+  }
+  return output;
 }

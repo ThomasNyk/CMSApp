@@ -47,11 +47,6 @@ Future<List<BottomNavigationBarItem>> getTabsFromData(playerData, selectedCharac
       tabIndexToNameMap[index] = 2;
       index++;
     }
-    if(character["race"] != null) {
-      bottomTabs.add(tabItem("Race", const Icon(Icons.radar)));
-      tabIndexToNameMap[index] = 3;
-      index++;
-    }
 
     return Future.value(getBottomTabs(bottomTabs));
 }
