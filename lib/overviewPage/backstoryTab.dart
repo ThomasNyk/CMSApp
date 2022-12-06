@@ -80,7 +80,7 @@ ListView BackstoryTab() {
 
 void getBackStory() async {
   var localPlayerData = await playerDataFuture;
-  Map? localCharacter = getObjectByAttribute(localPlayerData["characters"], selectedCharacter, "name");
+  Map? localCharacter = getObjectByAttribute(localPlayerData!["characters"], selectedCharacter, "id");
   if(localCharacter == null) {
     backstoryController.text = "Could not find character";
   }
@@ -88,7 +88,7 @@ void getBackStory() async {
 }
 
 void updateBackStory() async {
-  var playerId = (await playerDataFuture)["playerInfo"]["id"];
+  var playerId = (await playerDataFuture)!["playerInfo"]["id"];
   Map requestObj = {
     "id": playerId,
     "trait": "backstory",

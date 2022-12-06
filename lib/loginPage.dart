@@ -66,6 +66,8 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    userController.text = "";
+    passController.text = "";
     return WillPopScope(
       onWillPop: () async => false,
       child: Scaffold(

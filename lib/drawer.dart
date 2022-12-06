@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'Buy Menu/buyAbilities.dart';
 import 'Buy Menu/raceInfo.dart';
@@ -12,10 +13,10 @@ class MyDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: ListView(
+      child: Column(
         children: [
           const SizedBox(
-            height: 55.0,
+            height: 80.0,
             child: DrawerHeader(
               decoration: BoxDecoration(color: Colors.grey),
               margin: EdgeInsets.all(0.0),
@@ -45,7 +46,7 @@ class MyDrawer extends StatelessWidget {
                   ),
                 );
               } else {
-                Map? localCharacter = getObjectByAttribute(snapshot.data["characters"], selectedCharacter, "name");
+                Map? localCharacter = getObjectByAttribute(snapshot.data["characters"], selectedCharacter, "id");
                 if(localCharacter == null) {
                   return const Text("Could not find character by the selected name");
                 }
@@ -62,9 +63,11 @@ class MyDrawer extends StatelessWidget {
                         ),
                       );
                     } else {
+                      //log("Drawer");
+                      //log(snapshotGame.data.toString());
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: makeDrawerButtons(snapshotGame.data, localCharacter, context)
+                        children: makeDrawerButtons(snapshotGame.data, localCharacter, context, snapshot.data["playerInfo"]["id"])
                       );
                     }
                   }
@@ -72,6 +75,7 @@ class MyDrawer extends StatelessWidget {
               }
             }
           ),
+          logOutButton(context)
         ],
       ),
     );
@@ -83,28 +87,69 @@ List<Function> drawerTabs = [
   BuyAbilities.new,
 ];
 
-List<Widget> makeDrawerButtons(Map gameData, Map localCharacter, context) {
+List<Widget> makeDrawerButtons(Map gameData, Map localCharacter, context, String playerId) {
   List<Widget> output = [
-    createButton(context, gameData, localCharacter, "Race Info", 0)
+    createButton(context, gameData, localCharacter, "Rulebook", 0, playerId)
   ];
-  if(gameData["abilities"] != null && gameData["abilities"].length > 0) {
-    output.add(createButton(context, gameData, localCharacter, "Abilities", 1));
+  //log(gameData["AbiList"].toString());
+  if(gameData["AbiList"] != null && gameData["AbiList"].length > 0) {
+    output.add(createButton(context, gameData, localCharacter, "Abilities", 1, playerId));
   }
   return output;
 }
 
-Widget createButton(BuildContext context, Map gameData, Map localCharacter, String buttonText, drawerTabsIndex) {
+Widget logOutButton(context) {
+  return Expanded(
+    child: Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 0.0),
+        child: TextButton(
+          style: ButtonStyle(
+            backgroundColor: MaterialStateProperty.all(Colors.black12)
+          ),
+          onPressed: () => {
+            showDialog(context: context, builder: (context) => AlertDialog(
+              title: const Text("App has to close"),
+              content: const Text("The app has to close now to ensure updated data for next person, this will be updated in a newer version"),
+              actions: [
+                TextButton(
+                  onPressed: () => {
+                    storage.delete(key: "id"),
+                    SystemChannels.platform.invokeMethod('SystemNavigator.pop'),
+                  },
+                  child: const Text("OK")
+                )
+              ],),
+            )
+          },
+          child: const Padding(
+            padding: EdgeInsets.only(left: 5.0),
+            child: Text(
+              "Log Out",
+              style: TextStyle(
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget createButton(BuildContext context, Map gameData, Map localCharacter, String buttonText, int drawerTabsIndex, String playerId) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 0.0),
     child: TextButton(
       style: TextButton.styleFrom(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.zero),
+          borderRadius: BorderRadius.all(Radius.circular(1)),
         )
       ),
       onPressed: () => {
-        log(drawerTabsIndex.toString()),
-        Navigator.push(context, MaterialPageRoute(builder: (context) => drawerTabs[drawerTabsIndex](character: localCharacter, gameData: gameData))),
+        //log(drawerTabsIndex.toString()),
+        Navigator.push(context, MaterialPageRoute(builder: (context) => drawerTabs[drawerTabsIndex](playerID: playerId, character: localCharacter, gameData: gameData))),
       },
       child: Align(
         alignment: Alignment.centerLeft,

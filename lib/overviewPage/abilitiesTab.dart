@@ -17,24 +17,27 @@ FutureBuilder AbilitiesTab() {
           );
       } else {
         return FutureBuilder(
-          future: gameDataFuture,
-          builder: (BuildContext context, AsyncSnapshot snapshotTwo) {
-            if(!snapshotTwo.hasData) {
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: const [
-                  CircularProgressIndicator(),
-                  Text("Loading Game Data.."),
-                ],
-              );
-            } else {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: buildAbilityWidgetList(snapshot.data, snapshotTwo.data),
-              );
+            future: gameDataFuture,
+            builder: (BuildContext context, AsyncSnapshot snapshotGame) {
+              if(snapshotGame.connectionState != ConnectionState.done) {
+                return Center(
+                  child: Column(
+                    children: const [
+                      CircularProgressIndicator(),
+                      Text("Loading Game Data")
+                    ],
+                  ),
+                );
+              } else {
+                log("snapShotGame ConnectionState is: ${snapshotGame.connectionState.toString()} and does it have data?: ${snapshotGame.hasData}");
+                //log("Tab");
+                //log(snapshotGame.data.toString());
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: buildAbilityWidgetList(snapshot.data, snapshotGame.data),
+                );
+              }
             }
-          },
         );
       }
     }
@@ -42,6 +45,8 @@ FutureBuilder AbilitiesTab() {
 }
 
 List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
+  //log(localPlayerData.toString());
+  //log(localGameInfo.toString());
   List<Widget> widgets= [const Center(
     child: Padding(
       padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 0.0),
@@ -53,9 +58,10 @@ List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
       ),
     ),
   )];
-  Map? localCharacter = getObjectByAttribute(localPlayerData["characters"], selectedCharacter, "name");
+  Map? localCharacter = getObjectByAttribute(localPlayerData["characters"], selectedCharacter, "id");
+  //log(localCharacter.toString());
   if(localCharacter == null) {
-    widgets.add(const Text("Could not find Character for ability list building"));
+    widgets.add(const Text("Could not find Character for ability list building process"));
     return widgets;
   }
   if(localCharacter["abilities"] == null || localCharacter["abilities"].length < 1) {
@@ -65,9 +71,17 @@ List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
     return widgets;
   }
   for(int i = 0; i < localCharacter["abilities"].length; i++) {
-    Map? abilityObj = getObjectByAttribute(localGameInfo["abilities"], localCharacter["abilities"][i], "name");
-    log(abilityObj.toString());
-    abilityObj ??= {"description": "Could not find ability in GameData"};
+    //log(localGameInfo.toString());
+    //log(localCharacter["abilities"][i]);
+    Map? abilityObj = getObjectByUID(localGameInfo, localCharacter["abilities"][i]);
+    if(abilityObj == null){
+       widgets.add(const Card(
+         child: Center(
+           child: Text("Could not access Ability"),
+         ),
+       ));
+       return widgets;
+    }
     widgets.add(Card(
           child: Column(
             children: [
@@ -77,7 +91,7 @@ List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 5.0),
                     child: Text(
-                      localCharacter["abilities"][i].toString(),
+                      abilityObj["Name"].toString(),
                       style: const TextStyle(
                         fontSize: 20,
                       ),
@@ -86,7 +100,7 @@ List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 5.0),
                     child: Column(
-                      children: buildAffectedStatsColumn(abilityObj),
+                      children: buildAffectedStatsColumn(localGameInfo, abilityObj),
                     ),
                   )
                 ],
@@ -95,7 +109,7 @@ List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
                 alignment: Alignment.topLeft,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-                  child: Text(abilityObj["description"]),
+                  child: Text(abilityObj["Description"]),
                 ),
               ),
 
@@ -107,10 +121,10 @@ List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
   return widgets;
 }
 
-List<Widget> buildAffectedStatsColumn(abilityObj) {
+List<Widget> buildAffectedStatsColumn(gameInfo ,abilityObj) {
   List<Widget> output = [];
-  for(int i = 0; i < abilityObj['affectedStats'].length; i++) {
-    output.add(Text('${abilityObj["affectedStats"][i]["name"].toString()}: ${abilityObj["affectedStats"][i]["value"].toString()}'),);
+  for(int i = 0; i < abilityObj['AffectedResources'].length; i++) {
+    output.add(Text('${getObjectByUID(gameInfo, abilityObj["AffectedResources"][i]["UID"])!["Name"]}: ${abilityObj["affectedResources"][i]["Amount"].toString()}'),);
   }
   return output;
 }

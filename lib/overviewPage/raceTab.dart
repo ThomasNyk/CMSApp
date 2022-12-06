@@ -12,7 +12,7 @@ Widget RaceTab() {
           child: Text("Loading Player Data"),
         );
       } else {
-        Map? localCharacter = getObjectByAttribute(snapshot.data["characters"], selectedCharacter, "name");
+        Map? localCharacter = getObjectByAttribute(snapshot.data["characters"], selectedCharacter, "id");
         if(localCharacter == null) {
           return const Center(
             child: Text("Could not find character"),

@@ -7,9 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+import 'createCharacter/createCharacter.dart';
 import 'loginPage.dart';
 import 'overviewPage/abilitiesTab.dart';
 import 'overviewPage/backstoryTab.dart';
+import 'overviewPage/careerTab.dart';
 import 'overviewPage/navbar.dart';
 import 'overviewPage/overviewTab.dart';
 import 'drawer.dart';
@@ -20,41 +22,59 @@ const ip = '192.168.0.139:8000';//'192.168.59.179:8000';//
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const storage = FlutterSecureStorage();
 
-String selectedCharacter = "Jeff";
+String selectedCharacter = "abbf8ba0-5454-45da-9a71-c5774d7a5ab6";
 
-Completer _playerDataCompleter = Completer();
-Future playerDataFuture = _playerDataCompleter.future;
+Completer<Map?> _playerDataCompleter = Completer();
+Future<Map?> playerDataFuture = _playerDataCompleter.future;
 
-Completer _gameDataCompleter = Completer();
-Future gameDataFuture = _gameDataCompleter.future;
+Completer<Map?> _gameDataCompleter = Completer();
+Future<Map?> gameDataFuture = _gameDataCompleter.future;
+
+Completer<Map?> _compiledCharacterCompleter = Completer();
+Future<Map?> compiledCharacterFuture = _compiledCharacterCompleter.future;
+
+
 
 Map tabIndexToNameMap = {
   0: 0
 };
 
+class idCarrier {
+  final String id;
+
+  idCarrier(this.id);
+}
+
 void main() {
+
   runApp(const MyApp());
   getPlayerId().then((id) async => {
     if(id == null) {
       id = await openLoginPage(),
     },
-    fetchPlayerData(id).then((playerData) => {
-      _playerDataCompleter.complete(playerData),
+    fetchPlayerData(id).then((playerData) async {
+      //log(playerData.toString());
+      while(playerData == null || playerData["characters"] == null) {
+        log("CreateCharacter");
+        playerData["characters"] = jsonDecode((await navigatorKey.currentState!.pushNamed('/createCharacter', arguments: idCarrier(playerData["playerInfo"]["id"]))).toString());
+        selectedCharacter = playerData["characters"][0]["id"];
+        log(selectedCharacter);
+      }
+      _playerDataCompleter.complete(playerData);
+
+      compileCharacterData(playerData);
     })
-    .catchError((e) => {
-      showToast(e),
+    .catchError((e) {
+      showToast(e);
     })
   });
-  fetchGameData()
-  .catchError((e) => {
-    showToast(e),
-  });
+  fetchGameData();
+
 }
 
-Future<void> fetchGameData() async {
+void fetchGameData() async {
   http.Response gameData = await webRequest(false, "gameinfo.json", null);
   _gameDataCompleter.complete(jsonDecode(utf8.decode(gameData.bodyBytes)));
-  return Future.value();
 }
 
 void delayed(function, argument, delayMs) async {
@@ -76,7 +96,6 @@ Future<dynamic> fetchPlayerData(playerId) async {
   Object requestObj = {
     "id": playerId,
   };
-
   return await webRequest(true, 'client/cms/playerData', requestObj);
 }
 
@@ -137,6 +156,7 @@ class _MyHomePageState extends State<MyHomePage> {
     OverviewTab,
     AbilitiesTab,
     BackstoryTab,
+    CareerTab
   ];
 
   @override
@@ -200,7 +220,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         padding: EdgeInsets.symmetric(vertical: 18),
                         child: Text(
                             textAlign: TextAlign.center,
-                            "Nothing to show"
+                            "Nothing to show, acquire some stuff"
                         ),
                       ),
                     );
@@ -226,14 +246,32 @@ bool needsTabs(localPlayerData) {
 }
 
 DropdownButton getPlayerDropdown (snapshot, _setState) {
-  List<DropdownMenuItem> items = [];
+  List<DropdownMenuItem> DropdownItems = [];
   //log(snapshot.data.toString());
   for(int i = 0; i < snapshot.data["characters"].length; i++) {
-    items.add(DropdownMenuItem(value: snapshot.data["characters"][i]["name"],child: Text(snapshot.data["characters"][i]["name"], style: const TextStyle(color: Colors.black),),));
+    DropdownItems.add(DropdownMenuItem(
+      value: snapshot.data["characters"][i]["id"],
+      child: Text(snapshot.data["characters"][i]["name"],
+      style: const TextStyle(color: Colors.black),),));
   }
+  DropdownItems.add(DropdownMenuItem(
+    value: null,
+    onTap: () {
+      log("Clicked");
+      //log(navigatorKey.currentState!.toString());
+      navigatorKey.currentState!.pushNamed('/createCharacter');
+      log("Navigated");
+    },
+    child: Row(
+      children: const [
+        Icon(Icons.add),
+        Text("New Character", style: TextStyle(color: Colors.black),)
+      ],
+    ))
+  );
   return DropdownButton(
     style: const TextStyle(),
-    items: items,
+    items: DropdownItems,
     value: selectedCharacter,
     isExpanded: true,
     underline: const SizedBox(),
@@ -245,13 +283,15 @@ DropdownButton getPlayerDropdown (snapshot, _setState) {
 }
 
 
-Map? getObjectByAttribute(arr, name, attribute) {
+Map? getObjectByAttribute(List arr, String name, String attribute) {
+  //log("$arr\nName: $name\nAttribute: $attribute");
   for(int i = 0; i < arr.length; i++) {
     if(arr[i][attribute].toString() == name.toString()) {
-      //log(playerData["characters"][i].toString());
+      //log(arr[i].toString());
       return arr[i];
     }
   }
+  log("Could not find object with given attribute: $name as $attribute\n ${arr.toString()}");
   return null;
 }
 
@@ -300,6 +340,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const MyHomePage(title: 'Flutter Demo Home Page'),
         '/login': (context) => const LoginPage(),
+        '/createCharacter': (context) => const CreateCharacter(),
       },
     );
   }
@@ -312,4 +353,26 @@ class MyHomePage extends StatefulWidget {
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
+}
+
+void compileCharacterData(Map? playerData) async {
+  Map? compiledCharacterData = getObjectByAttribute(playerData!["characters"], selectedCharacter, "name");
+  //Todo compile playerData
+
+  _compiledCharacterCompleter.complete(compiledCharacterData);
+}
+
+Map? getObjectByUID(Map gameInfo, String uid) {
+  String uidType = uid.split("-/")[0];
+  //log(uidType);
+  //log(gameInfo[uidType].toString());
+  if(gameInfo[uidType] == null) {
+    return null;
+  }
+  for(int i = 0; i < gameInfo[uidType].length; i++) {
+    if(gameInfo[uidType][i]["UID"] == uid) {
+      return gameInfo[uidType][i];
+    }
+  }
+  return null;
 }

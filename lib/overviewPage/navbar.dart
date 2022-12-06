@@ -26,16 +26,16 @@ List<BottomNavigationBarItem> getBottomTabs(List<tabItem> tabs) {
 int currentIndex = 0;
 Future<List<BottomNavigationBarItem>> getTabsFromData(playerData, selectedCharacter) async {
     Map localPlayerData = await playerData;
-    Map? character = getObjectByAttribute(localPlayerData["characters"], selectedCharacter, "name");
+    Map? character = getObjectByAttribute(localPlayerData["characters"], selectedCharacter, "id");
     if(character == null) {
       return Future.error("Could not find Character");
     }
     int index = 1;
-    //log(character.toString());
     List<tabItem> bottomTabs = [tabItem(
         "Home",
         const Icon(Icons.home))];
-    if(character["abilities"] != null && character["abilities"].length > 0) {
+
+    if(character["AbiList"] != null && character["AbiList"].isNotEmpty) {
       bottomTabs.add(tabItem(
           "Abilities",
           const Icon(Icons.add_box)));
@@ -45,6 +45,11 @@ Future<List<BottomNavigationBarItem>> getTabsFromData(playerData, selectedCharac
     if(character["backstory"] != null) {
       bottomTabs.add(tabItem("Backstory", const Icon(Icons.hail)));
       tabIndexToNameMap[index] = 2;
+      index++;
+    }
+    if(character["careers"] != null) {
+      bottomTabs.add(tabItem("Careers", const Icon(Icons.business)));
+      tabIndexToNameMap[index] = 3;
       index++;
     }
 
