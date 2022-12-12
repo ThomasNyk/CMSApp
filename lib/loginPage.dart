@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 
 import 'package:flutter/material.dart';
 
+import 'main.dart';
+
 final userController = TextEditingController();
 final passController = TextEditingController();
 
@@ -37,7 +39,7 @@ void checkLogin (context) async {
     "usr": userController.text,
     "psw": passController.text
   });
-  var url = Uri.http('192.168.0.139:8000', 'login');
+  var url = Uri.http(ip, 'login');
   var response = await http.post(url, body: obj);
   if(response.statusCode != 200) {
     Fluttertoast.showToast(

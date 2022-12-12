@@ -46,8 +46,8 @@ class BackstoryTab extends StatelessWidget {
 
 }*/
 
-ListView BackstoryTab() {
-  getBackStory();
+ListView BackstoryTab(BuildContext context, Function mainSetState, {String? listName}) {
+  getBackStory(playerDataFuture);
   return ListView(
     children: [
       Padding(padding: const EdgeInsets.fromLTRB(15, 20, 20, 15),
@@ -55,6 +55,7 @@ ListView BackstoryTab() {
           children: [
             TextField(
                 decoration: const InputDecoration(
+                  hintText: "Not the creative type, huh?",
                   filled: true,
                   fillColor: Colors.black12,
                 ),
@@ -62,13 +63,22 @@ ListView BackstoryTab() {
                 keyboardType: TextInputType.multiline,
                 maxLines: 25
             ),
-            const Padding(padding: EdgeInsets.fromLTRB(10, 0, 30, 0),
-              child: TextButton(onPressed: updateBackStory,
-                style: ButtonStyle(
+            Padding(padding: const EdgeInsets.fromLTRB(10, 0, 30, 0),
+              child: TextButton(onPressed: () {
+                showDialog(context: context, builder: (context) => AlertDialog(
+                  title: const Text("Sure?"),
+                  content: const Text("Are you sure you want to update your backstory\nChanging the past is dangerous, don't you know?"),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: const Text("Too scary")),
+                    TextButton(onPressed: () {updateBackStory(playerDataFuture);}, child: Text("I'm brave"))
+                  ],
+                ));
+              },
+                style: const ButtonStyle(
                     foregroundColor: MaterialStatePropertyAll<Color>(Colors.white),
                     backgroundColor: MaterialStatePropertyAll<Color>(Colors.black54)
                 ),
-                child: Text("Save"),
+                child: const Text("Save"),
               ),
             ),
           ],
@@ -78,16 +88,17 @@ ListView BackstoryTab() {
   );
 }
 
-void getBackStory() async {
+void getBackStory(Future playerDataFuture) async {
   var localPlayerData = await playerDataFuture;
   Map? localCharacter = getObjectByAttribute(localPlayerData!["characters"], selectedCharacter, "id");
   if(localCharacter == null) {
-    backstoryController.text = "Could not find character";
+    backstoryController.text = "Could not find Character";
+  } else {
+    backstoryController.text = localCharacter!["backstory"] ?? "";
   }
-  backstoryController.text = localCharacter!["backstory"];
 }
 
-void updateBackStory() async {
+void updateBackStory(Future playerDataFuture) async {
   var playerId = (await playerDataFuture)!["playerInfo"]["id"];
   Map requestObj = {
     "id": playerId,

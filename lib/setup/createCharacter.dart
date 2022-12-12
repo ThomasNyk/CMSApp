@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:cms_for_real/Buy%20Menu/buyList.dart';
 import 'package:cms_for_real/main.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -32,7 +33,7 @@ class _CreateCharacterState extends State<CreateCharacter> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 25),
           child: SingleChildScrollView(
             child: FutureBuilder(
-              future: gameDataFuture,
+              future: (ModalRoute.of(context)!.settings.arguments as gameDataFutureCarrier).gameDataFuture,
               builder: (BuildContext context, AsyncSnapshot gameInfo) {
                 if (gameInfo.connectionState != ConnectionState.done) {
                   return Center(
@@ -113,11 +114,18 @@ class _CreateCharacterState extends State<CreateCharacter> {
                 showToast("You have not filled out all required fields");
               } else {
                 Map obj = {
-                  "id": (ModalRoute.of(context)!.settings.arguments as idCarrier).id,
+                  "id": (ModalRoute.of(context)!.settings.arguments as gameDataFutureCarrier).id,
                   "name": controllers[0].text,
-                  "race": selectedRace,
+                  "RacList": [selectedRace],
+                  "AbiList": [
+                  ]
                 };
                 webRequest(true, "newCharacter", obj).then((value) {
+                  log("value");
+                  log(value.toString());
+                  selectedCharacter = value["id"];
+                  obj["id"] = value["id"];
+                  compiledCharacterFuture = getCompiledCharacterFuture((ModalRoute.of(context)!.settings.arguments as gameDataFutureCarrier).id, selectedCharacter);
                   Navigator.pop(context, obj);
                 }).catchError((e) {
                   log(e.toString());

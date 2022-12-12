@@ -1,14 +1,16 @@
 import 'dart:developer';
 
+import 'package:cms_for_real/overviewPage/Tabs/abilitiesTab.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:cms_for_real/main.dart';
 import 'package:flutter/material.dart';
 
-Widget CareerTab() {
+Widget CareerTab(BuildContext context, Function mainSetState, {String? listName}) {
   return FutureBuilder(
       future: compiledCharacterFuture,
       builder: (BuildContext context, AsyncSnapshot character) {
-        if (!character.hasData) {
+        log(character.toString());
+        if (character.connectionState != ConnectionState.done) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -38,6 +40,19 @@ Widget CareerTab() {
                     ),
                   );
                 } else {
+                  if(character.data["CarList"] == null || character.data["CarList"].isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: const [
+                          Text("No Careers"),
+                          Text("GET A JOB", style: TextStyle(fontSize: 30, color: Colors.amber),),
+                          Text('From the "Acquire Menu" possibly?', style: TextStyle(color: Colors.black54),)
+                        ],
+                      ),
+                    );
+                  }
                   return Column(
                     children: buildCareerWidgetList(gameData.data, character.data),
                   );
@@ -53,19 +68,19 @@ List<Widget> buildCareerWidgetList(Map gameData, Map character) {
   List<Widget> output = [];
   //log(character.toString());
   //log(gameData.toString());
-  for(int i = 0; i < character["careers"].length; i++) {
-    Map? career = getObjectByUID(gameData, character["careers"][i]);
+  for(int i = 0; i < character["CarList"].length; i++) {
+    Map? career = getObjectByUID(gameData, character["CarList"][i]);
     if(career == null) {
-      output.add(Text("Unfound career: ${character["careers"][i]["UID"]}"));
+      output.add(Text("Unfound career: ${character["CarList"][i]["UID"]}"));
     } else {
-      output.add(careerWidget(career));
+      output.add(careerWidget(career, gameData));
     }
 
   }
   return output;
 }
 
-Widget careerWidget(Map career) {
+Widget careerWidget(Map career, Map gameData) {
   return Card(
     child: Column(
       children: [
@@ -84,7 +99,7 @@ Widget careerWidget(Map career) {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 5.0),
               child: Column(
-                children: const [Text("ok")],
+                children: buildAffectedStatsColumn(gameData, career),
               ),
             )
           ],

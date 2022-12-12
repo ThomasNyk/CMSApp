@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 class RaceInfo extends StatefulWidget {
   final Map character;
   final Map gameData;
-  const RaceInfo({Key? key, required this.character, required this.gameData}) : super(key: key);
+  final Function mainSetState;
+  const RaceInfo({Key? key, required this.character, required this.gameData, required this.mainSetState}) : super(key: key);
 
   @override
   State<RaceInfo> createState() => _RaceInfoState();

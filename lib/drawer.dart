@@ -3,12 +3,16 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'Buy Menu/buyAbilities.dart';
+import 'Buy Menu/buyList.dart';
 import 'Buy Menu/raceInfo.dart';
+import 'admin/adminMenu.dart';
 import 'main.dart';
 
 class MyDrawer extends StatelessWidget {
-  const MyDrawer({Key? key}) : super(key: key);
+  const MyDrawer({Key? key, required Future this.playerDataFuture, required Future this.gameDataFuture, required this.mainSetState}) : super(key: key);
+  final playerDataFuture;
+  final gameDataFuture;
+  final mainSetState;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +28,7 @@ class MyDrawer extends StatelessWidget {
               child: Center(
                 child:  Center(
                   child: Text(
-                    'Buy Menu',
+                    'Aquire Menu',
                     style: TextStyle(
                       fontSize: 30,
                     ),
@@ -67,7 +71,7 @@ class MyDrawer extends StatelessWidget {
                       //log(snapshotGame.data.toString());
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: makeDrawerButtons(snapshotGame.data, localCharacter, context, snapshot.data["playerInfo"]["id"])
+                        children: makeDrawerButtons(snapshotGame.data, localCharacter, context, snapshot.data["playerInfo"]["id"], snapshot.data["playerInfo"]["isAdmin"], mainSetState)
                       );
                     }
                   }
@@ -84,17 +88,33 @@ class MyDrawer extends StatelessWidget {
 
 List<Function> drawerTabs = [
   RaceInfo.new,
-  BuyAbilities.new,
+  BuyList.new,
+  AdminMenu.new,
 ];
 
-List<Widget> makeDrawerButtons(Map gameData, Map localCharacter, context, String playerId) {
+List<Widget> makeDrawerButtons(Map gameData, Map localCharacter, context, String playerId, bool? isAdmin, Function mainSetState) {
   List<Widget> output = [
-    createButton(context, gameData, localCharacter, "Rulebook", 0, playerId)
+    //createButton(context, gameData, localCharacter, "Rulebook", 0, playerId, mainSetState)
   ];
   //log(gameData["AbiList"].toString());
-  if(gameData["AbiList"] != null && gameData["AbiList"].length > 0) {
-    output.add(createButton(context, gameData, localCharacter, "Abilities", 1, playerId));
+  if(gameData["AbiList"] != null && gameData["AbiList"].isNotEmpty) {
+    output.add(createButton(context, gameData, localCharacter, "Abilities", 1, playerId, "AbiList", mainSetState));
   }
+  if(gameData["CarList"] != null && gameData["CarList"].isNotEmpty) {
+    output.add(createButton(context, gameData, localCharacter, "Career", 1, playerId, "CarList", mainSetState));
+  }
+  if(gameData["RelList"] != null && gameData["RelList"].isNotEmpty) {
+    output.add(createButton(context, gameData, localCharacter, "Religion", 1, playerId, "RelList", mainSetState));
+  }
+  if(gameData["IteList"] != null && gameData["IteList"].isNotEmpty) {
+    output.add(createButton(context, gameData, localCharacter, "Item", 1, playerId, "IteList", mainSetState));
+  }
+
+
+  if(isAdmin != null && isAdmin == true) {
+    output.add(createButton(context, gameData, localCharacter, "Admin Menu", 2, playerId, "", mainSetState));
+  }
+
   return output;
 }
 
@@ -138,7 +158,7 @@ Widget logOutButton(context) {
   );
 }
 
-Widget createButton(BuildContext context, Map gameData, Map localCharacter, String buttonText, int drawerTabsIndex, String playerId) {
+Widget createButton(BuildContext context, Map gameData, Map localCharacter, String buttonText, int drawerTabsIndex, String playerId, String listName, Function mainSetState) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 0.0),
     child: TextButton(
@@ -149,7 +169,13 @@ Widget createButton(BuildContext context, Map gameData, Map localCharacter, Stri
       ),
       onPressed: () => {
         //log(drawerTabsIndex.toString()),
-        Navigator.push(context, MaterialPageRoute(builder: (context) => drawerTabs[drawerTabsIndex](playerID: playerId, character: localCharacter, gameData: gameData))),
+        Navigator.push(context, MaterialPageRoute(builder: (context) => drawerTabs[drawerTabsIndex](
+            playerId: playerId,
+            characterId: localCharacter["id"],
+            gameData: gameData,
+            mainSetState: mainSetState,
+            listName: listName,
+            prettyName: buttonText))),
       },
       child: Align(
         alignment: Alignment.centerLeft,

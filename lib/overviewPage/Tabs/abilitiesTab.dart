@@ -2,11 +2,11 @@ import 'package:cms_for_real/main.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer';
 
-FutureBuilder AbilitiesTab() {
+FutureBuilder AbilitiesTab(BuildContext context, Function mainSetState, {String? listName}) {
   return FutureBuilder(
-    future: playerDataFuture,
-    builder: (BuildContext context, AsyncSnapshot snapshot) {
-      if(!snapshot.hasData) {
+    future: compiledCharacterFuture,
+    builder: (BuildContext context, AsyncSnapshot compiledDataSnapshot) {
+      if(compiledDataSnapshot.connectionState != ConnectionState.done) {
         return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -29,12 +29,11 @@ FutureBuilder AbilitiesTab() {
                   ),
                 );
               } else {
-                log("snapShotGame ConnectionState is: ${snapshotGame.connectionState.toString()} and does it have data?: ${snapshotGame.hasData}");
-                //log("Tab");
+                //log("snapShotGame ConnectionState is: ${snapshotGame.connectionState.toString()} and does it have data?: ${snapshotGame.hasData}");
                 //log(snapshotGame.data.toString());
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: buildAbilityWidgetList(snapshot.data, snapshotGame.data),
+                return ListView(
+                  //crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: buildAbilityWidgetList(compiledDataSnapshot.data, snapshotGame.data, listName),
                 );
               }
             }
@@ -44,36 +43,45 @@ FutureBuilder AbilitiesTab() {
   );
 }
 
-List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
+List<Widget> buildAbilityWidgetList(Map compiledCharacter, Map localGameInfo, String? listName) {
   //log(localPlayerData.toString());
   //log(localGameInfo.toString());
-  List<Widget> widgets= [const Center(
+  listName ??= "AbiList";
+  String prettyName = listName == "AbiList" ? "Abilities" : "Items";
+  List<Widget> widgets= [Center(
     child: Padding(
-      padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 0.0),
+      padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 0.0),
       child: Text(
-        "Your Abilities",
-        style: TextStyle(
+        "Your $prettyName",
+        style: const TextStyle(
           fontSize: 30
         ),
       ),
     ),
   )];
-  Map? localCharacter = getObjectByAttribute(localPlayerData["characters"], selectedCharacter, "id");
   //log(localCharacter.toString());
-  if(localCharacter == null) {
+  if(compiledCharacter == null) {
     widgets.add(const Text("Could not find Character for ability list building process"));
     return widgets;
   }
-  if(localCharacter["abilities"] == null || localCharacter["abilities"].length < 1) {
-    widgets.add(const Card(
-      child: Text("No abilities yet, buy some in the burgermenu at the top"),
+  if(compiledCharacter[listName] == null || compiledCharacter[listName].length < 1) {
+    widgets.add(Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+        child: Column(
+          children: const [
+            Text('No abilities yet, buy some in the "Acquire Menu" at the top'),
+            Text("Or don't. What do I care?")
+          ],
+        ),
+      ),
     ));
     return widgets;
   }
-  for(int i = 0; i < localCharacter["abilities"].length; i++) {
+  for(int i = 0; i < compiledCharacter[listName].length; i++) {
     //log(localGameInfo.toString());
     //log(localCharacter["abilities"][i]);
-    Map? abilityObj = getObjectByUID(localGameInfo, localCharacter["abilities"][i]);
+    Map? abilityObj = getObjectByUID(localGameInfo, compiledCharacter[listName][i]);
     if(abilityObj == null){
        widgets.add(const Card(
          child: Center(
@@ -121,10 +129,11 @@ List<Widget> buildAbilityWidgetList(localPlayerData, localGameInfo) {
   return widgets;
 }
 
-List<Widget> buildAffectedStatsColumn(gameInfo ,abilityObj) {
+List<Widget> buildAffectedStatsColumn(Map gameInfo, Map abilityObj) {
   List<Widget> output = [];
   for(int i = 0; i < abilityObj['AffectedResources'].length; i++) {
-    output.add(Text('${getObjectByUID(gameInfo, abilityObj["AffectedResources"][i]["UID"])!["Name"]}: ${abilityObj["affectedResources"][i]["Amount"].toString()}'),);
+    log(abilityObj["AffectedResources"][i]["UID"]);
+    output.add(Text('${getObjectByUID(gameInfo, abilityObj["AffectedResources"][i]["UID"])!["Name"]}: ${abilityObj["AffectedResources"][i]["Amount"].toString()}'),);
   }
   return output;
 }
