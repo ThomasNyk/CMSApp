@@ -22,12 +22,39 @@ Future<Map> getAdminCharacterFuture(String playerId, String characterId) async {
   return Future.value(response);
 }
 
+Future<List<Map>> filterCharacterRes(Map adminCharacter, Map? gameData) {
+  if (gameData == null) return Future.error("GameData empty");
+  List<Map> resList = [];
+  for(Map res in gameData["ResList"]) {
+    if(res["Type"] == 0) continue;
+    Map? characterRes = getObjectByUID(adminCharacter, res["UID"]);
+    characterRes ??= {
+      "UID": res["UID"],
+      "Amount": 0,
+    };
+    resList.add(characterRes);
+  }
+  return Future.value(resList);
+}
+late Future<List<Map>> resList;
+
+Future<void> getStuffDoneAsync() async {
+  resList = filterCharacterRes(await adminCharacter, await gameDataFuture);
+}
+
 class _AdminCharacterState extends State<AdminCharacter> {
+
+  @override
+  void initState() {
+    adminCharacter = getAdminCharacterFuture(widget.playerId, widget.characterId);
+    getStuffDoneAsync();
+  }
+
   @override
   Widget build(BuildContext context) {
     if(adminCharOnce) {
       adminCharOnce = false;
-      adminCharacter = getAdminCharacterFuture(widget.playerId, widget.characterId);
+
     }
     return FutureBuilder(
         future: adminCharacter,
@@ -64,35 +91,64 @@ class _AdminCharacterState extends State<AdminCharacter> {
                       appBar: AppBar(
                         title: Text(adminCharacterSnapshot.data["name"]),
                       ),
-                      body: Padding(
-                        padding: EdgeInsets.only(left: 5, top: 10, right: 5),
-                        child: ListView.builder(
-                            itemCount: gameDataSnapshot.data["ResList"].length,
-                            itemBuilder: (BuildContext context, int index) {
-                              return Card(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          gameDataSnapshot.data["ResList"][index]["Amount"] -= 1;
-                                        });
-                                      },
-                                        icon: const Icon(Icons.remove),
-                                    ),
-                                    Text('${gameDataSnapshot!["Name"].toString()}:  ${playerResource!["Amount"].toString()}'),
-                                    IconButton(
-                                        onPressed: () {
-                                          gameDataSnapshot.data["ResList"][index]["Amount"] += 1;
-                                        },
-                                        icon: const Icon(Icons.add),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                      ),
+                      body: FutureBuilder(
+                        future: resList,
+                        builder: (BuildContext context, AsyncSnapshot resListFuture) {
+                          if(resListFuture.connectionState != ConnectionState.done) {
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 5, top: 10, right: 5),
+                              child: Column(
+                                children: const [
+                                  CircularProgressIndicator(),
+                                  Text("Loading ResList"),
+                                ],
+                              ),
+                            );
+                          } else {
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 5, top: 10, right: 5),
+                              child: Column(
+                                children: [
+                                  ListView.builder(
+                                      itemCount: resListFuture.data.length,
+                                      itemBuilder: (BuildContext context, int index) {
+                                        return Card(
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              IconButton(
+                                                onPressed: () {
+                                                  setState(() {
+                                                    resListFuture.data[index]["Amount"] -= 1;
+                                                  });
+                                                },
+                                                icon: const Icon(Icons.remove),
+                                              ),
+                                              Text('${getObjectByUID(gameDataSnapshot.data, resListFuture.data[index]["UID"])!["Name"].toString()}:  ${resListFuture.data[index]["Amount"].toString()}'),
+                                              IconButton(
+                                                onPressed: () {
+                                                  setState(() {
+                                                    resListFuture.data[index]["Amount"] += 1;
+                                                  });
+                                                },
+                                                icon: const Icon(Icons.add),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                  ElevatedButton(
+                                    onPressed: () async {
+
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text("Save"))
+                                ],
+                              )
+                            );
+                          }
+                        },
+                      )
                     );
                   }
                 });
