@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:cms_for_real/admin/adminPlayer.dart';
 import 'package:cms_for_real/main.dart';
 import 'package:flutter/material.dart';
 
@@ -17,7 +18,7 @@ late Future adminCharacter;
 bool adminCharOnce = true;
 
 Future<Map> getAdminCharacterFuture(String playerId, String characterId) async {
-  Map response = await webRequest(true, "/getCharacter", {"playerId": playerId, "characterId": characterId});
+  Map response = await jsonDecodeFutureMap(webRequest(true, "/getCharacter", {"playerId": playerId, "characterId": characterId}));
   //return Future.value(response);
   return Future.value(response);
 }
@@ -86,15 +87,15 @@ class _AdminCharacterState extends State<AdminCharacter> {
                       ),
                     );
                   } else {
-                    log(adminCharacterSnapshot.toString());
+                    //og(adminCharacterSnapshot.toString());
                     return Scaffold(
                       appBar: AppBar(
                         title: Text(adminCharacterSnapshot.data["name"]),
                       ),
                       body: FutureBuilder(
                         future: resList,
-                        builder: (BuildContext context, AsyncSnapshot resListFuture) {
-                          if(resListFuture.connectionState != ConnectionState.done) {
+                        builder: (BuildContext context, AsyncSnapshot resListSnapshot) {
+                          if(resListSnapshot.connectionState != ConnectionState.done) {
                             return Padding(
                               padding: const EdgeInsets.only(left: 5, top: 10, right: 5),
                               child: Column(
@@ -109,37 +110,50 @@ class _AdminCharacterState extends State<AdminCharacter> {
                               padding: const EdgeInsets.only(left: 5, top: 10, right: 5),
                               child: Column(
                                 children: [
-                                  ListView.builder(
-                                      itemCount: resListFuture.data.length,
-                                      itemBuilder: (BuildContext context, int index) {
-                                        return Card(
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              IconButton(
-                                                onPressed: () {
-                                                  setState(() {
-                                                    resListFuture.data[index]["Amount"] -= 1;
-                                                  });
-                                                },
-                                                icon: const Icon(Icons.remove),
-                                              ),
-                                              Text('${getObjectByUID(gameDataSnapshot.data, resListFuture.data[index]["UID"])!["Name"].toString()}:  ${resListFuture.data[index]["Amount"].toString()}'),
-                                              IconButton(
-                                                onPressed: () {
-                                                  setState(() {
-                                                    resListFuture.data[index]["Amount"] += 1;
-                                                  });
-                                                },
-                                                icon: const Icon(Icons.add),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }),
+                                  Expanded(
+                                    child: ListView.builder(
+                                        itemCount: resListSnapshot.data.length,
+                                        itemBuilder: (BuildContext context, int index) {
+                                          return Card(
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                IconButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      resListSnapshot.data[index]["Amount"] -= 1;
+                                                    });
+                                                  },
+                                                  icon: const Icon(Icons.remove),
+                                                ),
+                                                Text('${getObjectByUID(gameDataSnapshot.data, resListSnapshot.data[index]["UID"])!["Name"].toString()}:  ${resListSnapshot.data[index]["Amount"].toString()}'),
+                                                IconButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      resListSnapshot.data[index]["Amount"] += 1;
+                                                    });
+                                                  },
+                                                  icon: const Icon(Icons.add),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }),
+                                  ),
                                   ElevatedButton(
                                     onPressed: () async {
-
+                                      Map requestObj = {
+                                        "playerId": widget.playerId,
+                                        "characterId": widget.characterId,
+                                        "data": resListSnapshot.data,
+                                        "trait": "ResList",
+                                      };
+                                      Map response = await jsonDecodeFutureMap(webRequest(true, "/client/cms/changeCharacterTrait", requestObj));
+                                      if(response["statusCode"] == 200) {
+                                        showToast("Successful save");
+                                      } else {
+                                        showToast("Failed save");
+                                      }
                                       Navigator.pop(context);
                                     },
                                     child: Text("Save"))

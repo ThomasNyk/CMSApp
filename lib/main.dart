@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:ffi';
 import 'package:cms_for_real/Buy%20Menu/buyList.dart';
 import 'package:cms_for_real/setup/createCharacter.dart';
 import 'package:cms_for_real/setup/createPlayer.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
@@ -22,7 +22,9 @@ import 'overviewPage/Tabs/overviewTab.dart';
 import 'drawer.dart';
 import 'overviewPage/Tabs/raceTab.dart';
 
-const ip = '192.168.0.139:8000';//'192.168.59.179:8000';//
+const online = true;
+
+const ip = online ? '192.38.10.90:22115' : '192.168.0.139:3000';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const storage = FlutterSecureStorage();
@@ -59,12 +61,12 @@ class gameDataFutureCarrier {
 void main() {
   runApp(const MyApp());
   storage.read(key: "selectedCharacter").then((value) => selectedCharacter = value ?? "");
-  log("asdasdasdlkm" + selectedCharacter);
+  //log("asdasdasdlkm" + selectedCharacter);
 }
 
-void fetchGameData(Completer _gameDataCompleter) async {
-  http.Response gameData = await webRequest(false, "gameinfo.json", null);
-  _gameDataCompleter.complete(jsonDecode(utf8.decode(gameData.bodyBytes)));
+void fetchGameData() async {
+  Map gameData = await jsonDecodeFutureMap(webRequest(true, "/getGameData", {}));
+  _gameDataCompleter.complete(gameData);
 }
 
 void delayed(Function function, argument, delayMs) async {
@@ -74,7 +76,7 @@ void delayed(Function function, argument, delayMs) async {
 
 Future<Map?> delayedNavigator(String routeName, dynamic arguments, int delayMs) async {
   await Future.delayed(Duration(milliseconds: delayMs));
-  log(routeName);
+  //log(routeName);
   return Future.value(await navigatorKey.currentState!.pushNamed(routeName, arguments: arguments));
 }
 
@@ -92,9 +94,46 @@ Future<Map?> getPlayerDataFuture(playerId) async {
   Object requestObj = {
     "id": playerId,
   };
-  return Future.value(await webRequest(true, 'client/cms/playerData', requestObj));
+  return Future.value(jsonDecodeFutureMap(webRequest(true, 'client/cms/playerData', requestObj)));
 }
 
+
+Future<http.Response> webRequest(bool post, String destination, Object? requestObj) async {
+  var url = Uri.http(ip, destination);
+  var response;
+  var parsedObj = jsonEncode(requestObj);
+  if(post) {
+    if(requestObj == null) {
+      return Future.error("Require object on post method");
+    }
+      return http.post(url, body: parsedObj);
+  } else {
+    return http.get(url);
+  }
+  /*
+  if(response.statusCode != 200) {
+    return Future.error("http request failed: ${response.statusCode}");
+  } else {
+      if(post) {
+        return Future.value(jsonDecode(utf8.decode(response.bodyBytes)));
+      } else {
+        return Future.value(response);
+      }
+  }
+   */
+}
+
+Future<Map> jsonDecodeFutureMap(Future<http.Response> response) async {
+  log((await response).toString());
+  return jsonDecode(utf8.decode((await response).bodyBytes));
+}
+Future<List<dynamic>> jsonDecodeFutureList(Future<http.Response> response) async {
+  //log((await response).toString());
+  return jsonDecode(utf8.decode((await response).bodyBytes));
+}
+
+
+/*
 Future<dynamic> webRequest(bool post, String destination, Object? requestObj) async {
   var url = Uri.http(ip, destination);
   var response;
@@ -114,18 +153,23 @@ Future<dynamic> webRequest(bool post, String destination, Object? requestObj) as
     } catch (e) {
       return Future.error(e.toString());
     }
-    response = await http.get(url);
+    /*
+    response = await http.get(url).onError((error, stackTrace) {
+      return Future.error(error.toString());
+    });
+     */
   }
   if(response.statusCode != 200) {
     return Future.error("http request failed: ${response.statusCode}");
   } else {
-      if(post) {
-        return Future.value(jsonDecode(utf8.decode(response.bodyBytes)));
-      } else {
-        return Future.value(response);
-      }
+    if(post) {
+      return Future.value(jsonDecode(utf8.decode(response.bodyBytes)));
+    } else {
+      return Future.value(response);
+    }
   }
 }
+*/
 
 void showToast(text) {
   Fluttertoast.showToast(
@@ -269,17 +313,17 @@ class _MyHomePageState extends State<MyHomePage> {
             (await navigatorKey.currentState!.pushNamed('/createPlayer', arguments: idCarrier(id!)));
           }
           while(playerData["characters"] == null) {
-          playerData["characters"] = [(await navigatorKey.currentState!.pushNamed('/createCharacter', arguments: gameDataFutureCarrier(id!, gameDataFuture)))];
-          selectedCharacter = playerData["characters"][playerData["characters"].length - 1]["id"].toString();
-          storage.write(key: "selectedCharacter", value: selectedCharacter);
-          playerDataFuture = getPlayerDataFuture(playerData["playerInfo"]["id"]);
+            playerData["characters"] = [(await navigatorKey.currentState!.pushNamed('/createCharacter', arguments: gameDataFutureCarrier(id!, gameDataFuture)))];
+            selectedCharacter = playerData["characters"][playerData["characters"].length - 1]["id"].toString();
+            storage.write(key: "selectedCharacter", value: selectedCharacter);
+            playerDataFuture = getPlayerDataFuture(playerData["playerInfo"]["id"]);
           }
           gameDataFuture.then((gameData) async {
-          if(getObjectByAttribute(playerData!["characters"], selectedCharacter, "id") == null) selectedCharacter = playerData["characters"][0]["id"];
-          compiledCharacterFuture = getCompiledCharacterFuture(playerData["playerInfo"]["id"], selectedCharacter);
+            if(getObjectByAttribute(playerData!["characters"], selectedCharacter, "id") == null) selectedCharacter = playerData["characters"][0]["id"];
+            compiledCharacterFuture = getCompiledCharacterFuture(playerData["playerInfo"]["id"], selectedCharacter);
           });
           setState(() {
-          _playerDataCompleter.complete(playerData);
+            _playerDataCompleter.complete(playerData);
           });
           continueCompleter.complete(true);
         })
@@ -289,7 +333,7 @@ class _MyHomePageState extends State<MyHomePage> {
         await continueLoop;
       }
     });
-    fetchGameData(_gameDataCompleter);
+    fetchGameData();
 
     onlyOnce = true;
   }
@@ -326,8 +370,8 @@ DropdownButton getPlayerDropdown (snapshot, Function _setState, BuildContext con
   //log("getPlayerDropdown");
   //log(snapshot.data.toString());
   for(int i = 0; i < snapshot.data["characters"].length; i++) {
-    log("CreateDropDownMenuItem");
-    log(snapshot.data["characters"][i]["id"]);
+    //log("CreateDropDownMenuItem");
+    //log(snapshot.data["characters"][i]["id"]);
     DropdownItems.add(DropdownMenuItem(
       value: snapshot.data["characters"][i]["id"],
       child: Text(snapshot.data["characters"][i]["name"],
@@ -352,7 +396,7 @@ DropdownButton getPlayerDropdown (snapshot, Function _setState, BuildContext con
       ],
     ))
   );
-  log("Dropdown creation SelectedCharacter" + selectedCharacter);
+  //log("Dropdown creation SelectedCharacter" + selectedCharacter);
   if(getObjectByAttribute(snapshot.data["characters"], selectedCharacter, "id") == null) selectedCharacter = snapshot.data["characters"][0]["id"];
   return DropdownButton(
     style: const TextStyle(),
@@ -362,14 +406,15 @@ DropdownButton getPlayerDropdown (snapshot, Function _setState, BuildContext con
     underline: const SizedBox(),
     onChanged: (value) async {
       if (value == "createCharacter") {
-        log("Open createCharacter");
+        //log("Open createCharacter");
         await navigatorKey.currentState!.pushNamed('/createCharacter',
             arguments: gameDataFutureCarrier(
                 snapshot.data["playerInfo"]["id"], gameDataFuture));
+        playerDataFuture = getPlayerDataFuture(snapshot.data["playerInfo"]["id"]);
       } else {
         _setState(() {
-          log("Value:");
-          log(value.toString());
+          //log("Value:");
+          //log(value.toString());
           value != null ? selectedCharacter = value : null;
           storage.write(key: "selectedCharacter", value: selectedCharacter);
           currentIndex = 0;
@@ -456,7 +501,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 Future<Map?> compileCharacterData(Map? character, Map gameData) async {
-  log(character.toString());
+  //log(character.toString());
   character ??= {};
   List<String> toCheck = ["AbiList", "RacList", "ResList", "CarList"];
   for(String listName in toCheck) {

@@ -132,7 +132,7 @@ List<Widget> buildAbilityWidgetList(Map compiledCharacter, Map localGameInfo, St
 List<Widget> buildAffectedStatsColumn(Map gameInfo, Map abilityObj) {
   List<Widget> output = [];
   for(int i = 0; i < abilityObj['AffectedResources'].length; i++) {
-    log(abilityObj["AffectedResources"][i]["UID"]);
+    //log(abilityObj["AffectedResources"][i]["UID"]);
     output.add(Text('${getObjectByUID(gameInfo, abilityObj["AffectedResources"][i]["UID"])!["Name"]}: ${abilityObj["AffectedResources"][i]["Amount"].toString()}'),);
   }
   return output;

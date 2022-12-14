@@ -22,38 +22,55 @@ int selectedTab = 0;
 TextEditingController searchController = TextEditingController();
 bool onlyOnceAdmin = true;
 late Future playerListFuture;
+late Future tokenListFuture;
+Map amounts = {};
+
 
 Future<List<dynamic>> getPlayerListFuture(String playerId) async {
-  List<dynamic> response = await webRequest(true, "/adminPlayerList", {"id": playerId});
+  List<dynamic> response = await jsonDecodeFutureList(webRequest(true, "/adminPlayerList", {"id": playerId}));
   //return Future.value(response);
+  return Future.value(response);
+}
+Future<List<dynamic>> getTokenListFuture(String playerId) async {
+  List<dynamic> response = await jsonDecodeFutureList(webRequest(true, "/getTokens", {"playerId": playerId}));
+  //log(response.toString());
   return Future.value(response);
 }
 
 class _AdminMenuState extends State<AdminMenu> {
 
+
+  @override
+  void initState() {
+    super.initState();
+    tokenListFuture = getTokenListFuture(widget.playerId);
+  }
+
+
   @override
   Widget build(BuildContext context) {
-
+    //log(amounts.toString());
     if(onlyOnceAdmin) {
       onlyOnceAdmin = false;
       playerListFuture = getPlayerListFuture(widget.playerId);
     }
 
-    List<Widget Function(Function setState, BuildContext context)> tabs = [
+    List<Widget Function(Function setState, BuildContext context, String playerId)> tabs = [
       playerList,
       tokenGenerator,
+      tokenList,
     ];
     return Scaffold(
       appBar: AppBar(
         title: const Text("Admin"),
       ),
-      body: tabs[selectedTab](setState, context),
+      body: tabs[selectedTab](setState, context, widget.playerId),
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: Colors.amber,
         currentIndex: selectedTab,
         onTap: (value) {
           setState(() {
-            log(value.toString());
+            //log(value.toString());
             selectedTab = value;
           });
         },
@@ -65,6 +82,10 @@ class _AdminMenuState extends State<AdminMenu> {
           BottomNavigationBarItem(
             icon: Icon(Icons.monetization_on),
             label: "Token gen",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.monetization_on_outlined),
+            label: "Token List",
           )
         ],
       ),
@@ -72,7 +93,7 @@ class _AdminMenuState extends State<AdminMenu> {
   }
 }
 
-Widget playerList(Function setState, BuildContext context) {
+Widget playerList(Function setState, BuildContext context, String playerId) {
   return Padding(
     padding: const EdgeInsets.only(top: 10, left: 10, right: 10),
     child: Column(
@@ -102,7 +123,7 @@ Widget playerList(Function setState, BuildContext context) {
                   ),
                 );
               } else {
-                log(playerListSnapshot.toString());
+                //log(playerListSnapshot.toString());
                 List<Map> searched = getSearchComplyingPlayers(playerListSnapshot.data);
                 return ListView.builder(
                   itemCount: searched.length + 1,
@@ -139,10 +160,91 @@ Widget playerList(Function setState, BuildContext context) {
   );
 }
 
-Widget tokenGenerator(Function setState, BuildContext context) {
-  return Container(
-    child: Text("asd"),
+Widget tokenGenerator(Function setState, BuildContext context, String playerId) {
+  return FutureBuilder(
+    future: gameDataFuture,
+    builder: (BuildContext context, AsyncSnapshot gameDataSnapshot) {
+      if(gameDataSnapshot.connectionState != ConnectionState.done) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              CircularProgressIndicator(),
+              Text("Loading gameData")
+            ],
+          ),
+        );
+      } else {
+        return Padding(
+          padding: const EdgeInsets.only(left: 10, top: 10, right: 10),
+          child: Column(
+              children: getTokenGenerators(gameDataSnapshot.data, setState, playerId),
+          ),
+        );
+      }
+    },
   );
+}
+
+List<Widget> getTokenGenerators(Map? gameData, Function setState, String playerId) {
+  if(gameData == null || gameData["ResList"] == null) return [];
+  List<Widget> output = [];
+
+  for(int i = 0; i < gameData["ResList"].length; i++) {
+    if(gameData["ResList"][i]["Type"] == 0) continue;
+    amounts[i.toString()] ??= 0;
+    output.add(
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: () async {
+              setState(() {
+                amounts[i.toString()] -= 1;
+              });
+            },
+            icon: const Icon(Icons.remove)
+          ),
+          Text('${gameData["ResList"][i]["Name"]}: ${amounts[i.toString()]}'),
+          Row(
+            children: [
+              IconButton(
+                  onPressed: () async {
+                    setState(() {
+                      amounts[i.toString()] += 1;
+                    });
+                  },
+                  icon: const Icon(Icons.add)
+              ),
+              IconButton(
+                  onPressed: () async {
+                    Map requestObj = {
+                      "playerId": playerId,
+                      "UID": gameData["ResList"][i]["UID"],
+                      "Amount": amounts[i.toString()],
+                      "Name": gameData["ResList"][i]["Name"],
+                    };
+                    Map response = await jsonDecodeFutureMap(webRequest(true, "/generateToken", requestObj));
+                    if(response["statusCode"] == 200) {
+                      showToast("Generated");
+                    } else {
+                      showToast("Failed");
+                    }
+                    showToast("Saved");
+
+                    setState(() {
+
+                    });
+                  },
+                  icon: const Icon(Icons.save)
+              ),
+            ],
+          )
+        ],
+      )
+    );
+  }
+  return output;
 }
 
 List<Map> getSearchComplyingPlayers(List<dynamic> players) {
@@ -153,4 +255,77 @@ List<Map> getSearchComplyingPlayers(List<dynamic> players) {
     }
   }
   return output;
+}
+
+Widget tokenList(Function setState, BuildContext context, String playerId) {
+  return Padding(
+    padding: const EdgeInsets.only(left: 10, top: 10, right: 10),
+    child: FutureBuilder(
+      future: tokenListFuture,
+      builder: (BuildContext context, AsyncSnapshot tokenListSnapshot) {
+        if(tokenListSnapshot.connectionState != ConnectionState.done) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                CircularProgressIndicator(),
+                Text("Loading token list"),
+              ],
+            ),
+          );
+        } else {
+          return Padding(
+            padding: const EdgeInsets.only(left: 0, top: 10, right: 0),
+            child: FutureBuilder(
+              future: gameDataFuture,
+              builder: (BuildContext context, AsyncSnapshot gameDataSnapshot) {
+                if(gameDataSnapshot.connectionState != ConnectionState.done) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        CircularProgressIndicator(),
+                        Text("Loading gameData")
+                      ],
+                    ),
+                  );
+                } else {
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      setState(() {
+                        tokenListFuture = getTokenListFuture(playerId);
+                      });
+                    },
+                    child: ListView.builder(
+                        itemCount: tokenListSnapshot.data.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          //Map? resObj = getObjectByUID(gameDataSnapshot.data, tokenListSnapshot.data[index]["UID"]);
+                          return Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(tokenListSnapshot.data[index]["Name"], style: const TextStyle(fontSize: 20),),
+                                        Text(tokenListSnapshot.data[index]["TokenAmount"].toString(), style: const TextStyle(fontSize: 20))
+                                      ],
+                                    ),
+                                    Text(tokenListSnapshot.data[index]["UID"])
+                                  ],
+                                ),
+                              )
+                          );
+                        }
+                    ),
+                  );
+                }
+              },
+            ),
+          );
+        }
+      },
+    )
+  );
 }

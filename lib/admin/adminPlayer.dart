@@ -14,7 +14,7 @@ class PlayerView extends StatelessWidget {
   const PlayerView({Key? key, required this.playerId}) : super(key: key);
 
   Future<Map> getAdminPlayerDataFuture(String playerId) async {
-    Map response = await webRequest(true, "/client/cms/playerData", {"id": playerId});
+    Map response = await jsonDecodeFutureMap(webRequest(true, "/client/cms/playerData", {"id": playerId}));
     //return Future.value(response);
     return Future.value(response);
   }

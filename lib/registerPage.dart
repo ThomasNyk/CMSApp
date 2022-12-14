@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:cms_for_real/registerPage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 
@@ -34,41 +33,94 @@ ColorScheme mainTheme = const ColorScheme(
     surface: Colors.grey,
     onSurface: Colors.grey);
 
-void sendLogin (context) async {
-  Object obj = jsonEncode({
-    "usr": userController.text,
-    "psw": passController.text
-  });
-  var url = Uri.http(ip, 'login');
-  var response = await http.post(url, body: obj);
-  if(response.statusCode != 200) {
-    Fluttertoast.showToast(
-        msg: "Login Failed",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0
-    );
-  } else {
-    var loginData = jsonEncode({
-      "id": jsonDecode(response.body)["id"],
-      "rememberMe": rememberMe
-    });
 
-    Navigator.pop(context, loginData);
+bool secondConfirm = false;
+void checkLogin (context) async {
+  if(confirmation != true) {
+    showDialog(context: context, builder: (context) => AlertDialog(
+        title: const Text("IMPORTANT"),
+        content: const Text("DO NOT USE IMPORTANT PASSWORDS. This server does not run on a secure connection, nor is the passwords encrypted before storage."
+            "You and only you take full responsibility for all the information you enter"
+            "check the \"I understand...\" when you understand and try again"),
+        actions: [
+          TextButton(
+              onPressed: () {
+                secondConfirm = false;
+                confirmation = false;
+                Navigator.pop(context);
+              },
+              child: const Text("I do not understand")),
+          TextButton(
+              onPressed: () {
+                secondConfirm = true;
+                confirmation = false;
+                Navigator.pop(context);
+              },
+              child: const Text("I understand")),
+        ],
+    ));
+  } else if(secondConfirm != true){
+    showDialog(context: context, builder: (context) => AlertDialog(
+      title: const Text("IMPORTANT"),
+      content: const Text("DO NOT USE IMPORTANT PASSWORDS(or usernames). This server does not utilize a secure connection, nor are the passwords encrypted before storage. "
+          "You and only you take full responsibility for all the information you enter "
+          "To prove you are reading this I will now secretly uncheck the required checkmark and you will have to recheck it and press the register button again"
+          "\nBy clicking ok below you confirm that you fully understand this, agree to it, and void any right to keep data entered secure"
+      ),
+      actions: [
+        TextButton(
+            onPressed: () {
+              secondConfirm = false;
+              confirmation = false;
+              Navigator.pop(context);
+            },
+            child: const Text("I do not understand")),
+        TextButton(
+            onPressed: () {
+              secondConfirm = true;
+              confirmation = false;
+              Navigator.pop(context);
+            },
+            child: const Text("I understand")),
+      ],
+    ));
+  } else {
+    var loginData = {
+        "username": userController.text,
+        "password": passController.text,
+        "isAdmin": isAdmin,
+      };
+    showToast("Sending data");
+    http.Response response = await webRequest(true, "registerUser", loginData);
+    if(response.statusCode == 200) {
+      showToast("User created");
+    } else {
+      showToast("Failed to create user, try again");
+    }
+    confirmation = false;
+    secondConfirm = false;
+    isAdmin = false;
+    Navigator.pop(context);
   }
   //log('Response status: ${response.statusCode}');
   //log('Response body: ${response.body}');
 }
 
-
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatelessWidget {
+  const RegisterPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    Future.delayed(Duration.zero, () {
+      showDialog(context: context, builder: (context) => AlertDialog(
+        title: const Text("IMPORTANT"),
+        content: const Text("DO NOT USE IMPORTANT PASSWORDS. This server does not run on a secure connection, nor are the passwords encrypted before storage."
+            "You and only you take full responsibility for all the information you enter"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK")),
+        ],
+      ));
+    });
     userController.text = "";
     passController.text = "";
     return WillPopScope(
@@ -76,7 +128,7 @@ class LoginPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('Login'),
+          title: const Text('Register'),
         ),
         body: SingleChildScrollView(
           child: Column(
@@ -119,12 +171,12 @@ class LoginPage extends StatelessWidget {
               Padding(padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
                 child: Row(
                   children: [
-                    const Flexible(
-                      child: checkbox(),
+                    const Expanded(
+                      child: checkboxTwo(),
                     ),
                     Padding(padding: const EdgeInsets.fromLTRB(10, 0, 30, 0),
                       child: TextButton(onPressed: () {
-                          sendLogin(context);
+                          checkLogin(context);
                       }, style: ButtonStyle(
                           foregroundColor: MaterialStateProperty.all<Color>(mainTheme.secondary),
                           backgroundColor: MaterialStateProperty.all<Color>(mainTheme.primary),
@@ -135,18 +187,9 @@ class LoginPage extends StatelessWidget {
                   ],
                 ),
               ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(padding: const EdgeInsets.fromLTRB(30, 10, 0, 0),
-                  child: TextButton(onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage()));
-                  }, style: ButtonStyle(
-                    foregroundColor: MaterialStateProperty.all<Color>(mainTheme.secondary),
-                    backgroundColor: MaterialStateProperty.all<Color>(mainTheme.primary),
-                  ),
-                    child: const Text("Register",),
-                  ),
-                ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(10, 25, 10, 0),
+                child: checkbox(),
               ),
             ],
           ),
@@ -202,7 +245,7 @@ class _passwordFieldState extends State<passwordField> {
 }
 
 
-bool rememberMe = false;
+bool confirmation = false;
 
 class checkbox extends StatefulWidget {
   const checkbox({Key? key}) : super(key: key);
@@ -213,21 +256,53 @@ class checkbox extends StatefulWidget {
 class _checkboxState extends State<checkbox> {
   @override
   Widget build(BuildContext context) {
-    return Padding(padding: EdgeInsets.fromLTRB(15, 0, 20, 0),
-      child: Row(
+    return Padding(padding: const EdgeInsets.fromLTRB(15, 0, 20, 0),
+      child: Column(
         children: [
           Theme(
               data: ThemeData(unselectedWidgetColor: mainTheme.primary),
-              child: Checkbox(value: rememberMe, tristate: false, onChanged: (bool? value) {
+              child: Checkbox(value: confirmation, tristate: false, onChanged: (bool? value) {
                 setState(() {
-                  rememberMe = !rememberMe;
+                  confirmation = !confirmation;
                 });
               },
                 activeColor: mainTheme.primary,
                 checkColor: Colors.white,
               )
           ),
-          Text("Remember me?", style: TextStyle(color: mainTheme.secondary, fontSize: 16))
+          Text("I take full responsibility for the information i enter here and assume other people WILL see it!", style: TextStyle(color: mainTheme.secondary, fontSize: 16))
+        ],
+      ),
+    );
+  }
+}
+
+
+bool isAdmin = false;
+class checkboxTwo extends StatefulWidget {
+  const checkboxTwo({Key? key}) : super(key: key);
+
+  @override
+  _checkboxTwoState createState() => _checkboxTwoState();
+}
+class _checkboxTwoState extends State<checkboxTwo> {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(padding: const EdgeInsets.fromLTRB(15, 0, 20, 0),
+      child: Row(
+        children: [
+          Theme(
+              data: ThemeData(unselectedWidgetColor: mainTheme.primary),
+              child: Checkbox(value: isAdmin, tristate: false, onChanged: (bool? value) {
+                setState(() {
+                  isAdmin = !isAdmin;
+                });
+              },
+                activeColor: mainTheme.primary,
+                checkColor: Colors.white,
+              )
+          ),
+          Text("Is admin?", style: TextStyle(color: mainTheme.secondary, fontSize: 16))
         ],
       ),
     );

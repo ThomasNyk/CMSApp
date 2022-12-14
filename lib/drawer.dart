@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:cms_for_real/Buy%20Menu/redeemToken.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -90,6 +91,7 @@ List<Function> drawerTabs = [
   RaceInfo.new,
   BuyList.new,
   AdminMenu.new,
+  RedeemToken.new,
 ];
 
 List<Widget> makeDrawerButtons(Map gameData, Map localCharacter, context, String playerId, bool? isAdmin, Function mainSetState) {
@@ -97,17 +99,20 @@ List<Widget> makeDrawerButtons(Map gameData, Map localCharacter, context, String
     //createButton(context, gameData, localCharacter, "Rulebook", 0, playerId, mainSetState)
   ];
   //log(gameData["AbiList"].toString());
-  if(gameData["AbiList"] != null && gameData["AbiList"].isNotEmpty) {
-    output.add(createButton(context, gameData, localCharacter, "Abilities", 1, playerId, "AbiList", mainSetState));
-  }
   if(gameData["CarList"] != null && gameData["CarList"].isNotEmpty) {
     output.add(createButton(context, gameData, localCharacter, "Career", 1, playerId, "CarList", mainSetState));
   }
   if(gameData["RelList"] != null && gameData["RelList"].isNotEmpty) {
     output.add(createButton(context, gameData, localCharacter, "Religion", 1, playerId, "RelList", mainSetState));
   }
+  if(gameData["AbiList"] != null && gameData["AbiList"].isNotEmpty) {
+    output.add(createButton(context, gameData, localCharacter, "Abilities", 1, playerId, "AbiList", mainSetState));
+  }
   if(gameData["IteList"] != null && gameData["IteList"].isNotEmpty) {
     output.add(createButton(context, gameData, localCharacter, "Item", 1, playerId, "IteList", mainSetState));
+  }
+  if(true) {
+    output.add(createButton(context, gameData, localCharacter, "Redeem Token", 3, playerId, "tokens", mainSetState));
   }
 
 

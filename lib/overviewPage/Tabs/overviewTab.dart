@@ -28,7 +28,7 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
             child: Column(
               children: const [
                 CircularProgressIndicator(),
-                Text("Fetching player a data..."),
+                Text("Fetching player data..."),
               ],
             ),
           );
@@ -70,14 +70,14 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
                       );
                     } else {
                       if(characterSnapShot.data == null) {
-                        log("Null");
-                        log(characterSnapShot.toString());
+                        //log("Null");
+                        //log(characterSnapShot.toString());
                         return RefreshIndicator(
                             onRefresh: () async {
                               mainSetState(() {
                                 playerDataFuture = getPlayerDataFuture(playerDataSnapshot.data["playerInfo"]["id"]);
                                 compiledCharacterFuture = getCompiledCharacterFuture(playerDataSnapshot.data["playerInfo"]["id"], selectedCharacter);
-                                log(compiledCharacterFuture.toString());
+                                //log(compiledCharacterFuture.toString());
                                 showToast("Refreshed");
                               });
                             },
@@ -90,8 +90,9 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
 
                       }
                       List<List<Map>> sections = getSections(characterSnapShot.data, gameDataSnapshot.data);
-                      log("Sections:");
-                      //log(sections[2].toString());
+                      //log("Sections:");
+                      //log(sections.toString());
+                      //log("http://$ip/${characterSnapShot.data["image"]}");
                       return RefreshIndicator(
                         onRefresh: () async {
                           mainSetState(() {
@@ -102,8 +103,18 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
                         },
                         child: ListView(
                           children: [
-                            Card(
-                              child: Align(
+                            GestureDetector(
+                              onTap: (() {
+                                showDialog(context: context, builder: (context) => AlertDialog(
+                                  title: const Text("Oops"),
+                                  content: const Text("Contrary to popular belief this is not meant to be a button"),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK")),
+                                  ],
+                                ));
+                              }),
+                              child: Card(
+                                child: Align(
                                   alignment: Alignment.topLeft,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(vertical: padding, horizontal: padding),
@@ -112,9 +123,9 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
                                       children: [
                                         Row(
                                           children: [
-                                            !characterSnapShot.data.containsKey("image")
+                                            characterSnapShot.data.containsKey("image")
                                                 ? Image.network(
-                                              "https://gildasclubgr.org/wp-content/uploads/2019/02/no-image.jpg",
+                                              "http://$ip/${characterSnapShot.data["image"]}",
                                               height:
                                               imageHeight,
                                               errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
@@ -125,7 +136,7 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
                                               },
                                             )
                                                 : Image.network(
-                                              characterSnapShot.data["image"],
+                                              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRYEBKhlYYZa4Saksn04meXChE44J1PU9BCZA&usqp=CAU",
                                               height: imageHeight,
                                               errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
                                                 return const Padding(
@@ -135,28 +146,27 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
                                               },
                                             ),
                                             Padding(
-                                                padding: const EdgeInsets.symmetric(vertical: padding, horizontal: padding),
-                                                child: FutureBuilder(
-                                                  future: gameDataFuture,
-                                                  builder: (BuildContext context, AsyncSnapshot gameInfoSnapshot) {
-                                                    if(gameInfoSnapshot.connectionState != ConnectionState.done) {
-                                                      return const Text("Loading GameInfo");
-                                                    } else {
-                                                      return Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                        children: getStatsWidgets(sections[0], gameInfoSnapshot.data),
-                                                      );
-                                                    }
-                                                  },
-                                                )
-
+                                              padding: const EdgeInsets.symmetric(vertical: padding, horizontal: padding),
+                                              child: FutureBuilder(
+                                                future: gameDataFuture,
+                                                builder: (BuildContext context, AsyncSnapshot gameInfoSnapshot) {
+                                                  if(gameInfoSnapshot.connectionState != ConnectionState.done) {
+                                                    return const Text("Loading GameInfo");
+                                                  } else {
+                                                    return Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: getStatsWidgets(sections[0], gameInfoSnapshot.data),
+                                                    );
+                                                  }
+                                                },
+                                              ),
                                             ),
-
                                           ],
                                         ),
                                       ],
                                     ),
-                                  )
+                                  ),
+                                ),
                               ),
                             ),
                             (sections.length > 1 && sections[1].isNotEmpty) ? Card(
@@ -300,18 +310,21 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
 
 List<List<Map>> getSections(Map character, Map gameData) {
   List<List<Map>> output = [];
+  //log("Sections");
+  if(character["ResList"] == null) character["ResList"] = [];
   if(character["RacList"][0] != null) {
     output.add([{
       "RacList": ["${character["RacList"][0]}"]
     }]);
   }
   for(Map item in character["ResList"]) {
+    //log(item.toString());
     Map? gameDataItem = getObjectByUID(gameData, item["UID"]);
     if(gameDataItem == null) {
       continue;
     }
     gameDataItem["Amount"] = item["Amount"];
-    log("Get Sections: ${gameDataItem["Type"].toString()} : ${output.length}");
+    //log("Get Sections: ${gameDataItem["Type"].toString()} : ${output.length}");
     while(gameDataItem["Type"] >= output.length) {
       output.add([]);
     }
@@ -320,9 +333,9 @@ List<List<Map>> getSections(Map character, Map gameData) {
   return output;
 }
 
-List<Widget> getStatsWidgets(List<Map> elements,Map gameInfo) {
-  log("getStatsWidgets");
-  log(elements.toString());
+List<Widget> getStatsWidgets(List<Map> elements, Map gameInfo) {
+  //log("getStatsWidgets");
+  //log(elements.toString());
 
   Map? raceObj = getObjectByUID(gameInfo, elements[0]["RacList"][0]);
   raceObj ??= {"Name": "Race not found"};
@@ -348,3 +361,4 @@ extension StringExtension on String {
     return "${this[0].toUpperCase()}${this.substring(1).toLowerCase()}";
   }
 }
+

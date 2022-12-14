@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -45,6 +46,7 @@ class _CreateCharacterState extends State<CreateCharacter> {
                     ),
                   );
                 } else {
+                  //log(gameInfo.toString());
                   return Column(
                     children: createRows(gameInfo),
                   );
@@ -112,18 +114,30 @@ class _CreateCharacterState extends State<CreateCharacter> {
             onPressed: () async {
               if(controllers[0].text == "" || selectedRace == null) {
                 showToast("You have not filled out all required fields");
+
               } else {
+                String img64 = "";
+                String fileExtension = "";
+                if(image != null) {
+                  //List<int> imageBytes = await image!.readAsBytes();
+                  final bytes = File(image!.path).readAsBytesSync();
+                  List<String> tempPath = image!.path.split(".");
+                  fileExtension = tempPath[tempPath.length - 1];
+                  img64 = base64Encode(bytes);
+                }
+
                 Map obj = {
                   "id": (ModalRoute.of(context)!.settings.arguments as gameDataFutureCarrier).id,
                   "name": controllers[0].text,
                   "RacList": [selectedRace],
-                  "AbiList": [
-                  ]
+                  "AbiList": [],
+                  "imageData": img64,
+                  "fileExtension": fileExtension,
                 };
-                webRequest(true, "newCharacter", obj).then((value) {
-                  log("value");
-                  log(value.toString());
-                  selectedCharacter = value["id"];
+                jsonDecodeFutureMap(webRequest(true, "newCharacter", obj)).then((value) {
+                  //log("value");
+                  //log(value.toString());
+                  //selectedCharacter = value["id"];
                   obj["id"] = value["id"];
                   compiledCharacterFuture = getCompiledCharacterFuture((ModalRoute.of(context)!.settings.arguments as gameDataFutureCarrier).id, selectedCharacter);
                   Navigator.pop(context, obj);

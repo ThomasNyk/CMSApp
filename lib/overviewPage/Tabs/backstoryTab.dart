@@ -70,7 +70,7 @@ ListView BackstoryTab(BuildContext context, Function mainSetState, {String? list
                   content: const Text("Are you sure you want to update your backstory\nChanging the past is dangerous, don't you know?"),
                   actions: [
                     TextButton(onPressed: () => Navigator.pop(context), child: const Text("Too scary")),
-                    TextButton(onPressed: () {updateBackStory(playerDataFuture);}, child: Text("I'm brave"))
+                    TextButton(onPressed: () {updateBackStory(playerDataFuture, context);}, child: Text("I'm brave"))
                   ],
                 ));
               },
@@ -94,22 +94,23 @@ void getBackStory(Future playerDataFuture) async {
   if(localCharacter == null) {
     backstoryController.text = "Could not find Character";
   } else {
-    backstoryController.text = localCharacter!["backstory"] ?? "";
+    backstoryController.text = localCharacter["backstory"] ?? "";
   }
 }
 
-void updateBackStory(Future playerDataFuture) async {
+void updateBackStory(Future playerDataFuture, BuildContext context) async {
   var playerId = (await playerDataFuture)!["playerInfo"]["id"];
   Map requestObj = {
-    "id": playerId,
+    "playerId": playerId,
     "trait": "backstory",
     "data": backstoryController.text,
-    "characterName": selectedCharacter
+    "characterId": selectedCharacter
   };
   //log(requestObj.toString());
-  var response = await webRequest(true, "client/cms/changeCharacterTrait", requestObj);
+  var response = await jsonDecodeFutureMap(webRequest(true, "client/cms/changeCharacterTrait", requestObj));
   if(response["statusCode"] == 200) {
     showToast("Updated Backstory");
+    Navigator.pop(context);
   }
 }
 

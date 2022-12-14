@@ -58,7 +58,7 @@ class _CreatePlayerState extends State<CreatePlayer> {
                             "age": ageController.text,
                           };
                           webRequest(true, "newPlayer", obj).then((value) {
-                            log(value.toString());
+                            //log(value.toString());
                           }).catchError((e) {
                             log("error:");
                             log(e.toString());

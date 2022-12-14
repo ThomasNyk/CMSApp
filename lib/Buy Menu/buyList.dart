@@ -12,14 +12,14 @@ Future<Map?> getCharacterFuture(String playerId, String characterId) async {
     "playerId": playerId,
     "characterId": characterId
   };
-  Map? character = await webRequest(true, "getCharacter", requestObj);
-  log("abilitiesList");
-  log(character.toString());
+  Map? character = await jsonDecodeFutureMap(webRequest(true, "getCharacter", requestObj));
+  //log("abilitiesList");
+  //log(character.toString());
   return Future.value(character);
 }
 Future<Map?> getCompiledCharacterFuture(String playerId, String characterId) async {
-  log("CharacterId");
-  log(characterId);
+  //log("CharacterId");
+  //log(characterId);
   Map? rawCharacter = await getCharacterFuture(playerId, characterId);
   rawCharacter ??= {};
   Map? gameData = await gameDataFuture;
@@ -78,7 +78,7 @@ class _BuyListState extends State<BuyList> {
             ),
             body: RefreshIndicator(
               onRefresh: () async {
-                log("REFRESH");
+                //log("REFRESH");
                 await Future.delayed(const Duration(seconds: 1));
                 setState(() {
                   playerDataFuture = getPlayerDataFuture(widget.playerId);
@@ -108,8 +108,8 @@ List<Widget> buildBuyList(String playerID, Map character, Map gameData, String l
   for(int i = 0; i < gameData[listName].length; i++) {
     bool bought = character[listName].contains(gameData[listName][i]["UID"]);
     List<List<String>> failedRequirements = getFailedRequirements(gameData[listName][i], gameData, character);
-    log("Failed Req: ${gameData[listName][i]}");
-    log(failedRequirements.toString());
+    //log("Failed Req: ${gameData[listName][i]}");
+    //log(failedRequirements.toString());
     if((failedRequirements.isEmpty || failedRequirements[0].isEmpty)&& !bought) {
       output.add(buildItemEntry(playerID, character, gameData[listName][i], context, true, false, gameData, buyAbilitySetState, mainSetState));
     } else if(!bought){
@@ -299,12 +299,12 @@ int checkDiscounts(Map object, character) {
   int cost = object["Cost"];
   if(object["Discounts"] == null || object["Discounts"].isEmpty) return cost;
   for(Map discounts in object["Discounts"]) {
-    log(discounts.toString());
+    //log(discounts.toString());
     String UIDType = discounts["UID"].split("-/")[0];
     if(containsAttribute(character[UIDType], discounts["UID"], "UID")) cost -= discounts["Amount"] as int;
   }
-  log("cost");
-  log(cost.toString());
+  //log("cost");
+  //log(cost.toString());
   return cost;
 }
 
@@ -318,7 +318,7 @@ List<List<String>> getFailedRequirements(Map object, Map gameData, Map character
   if(!(object["CostTypes"] == null && object["CostTypes"].isEmpty)) {
     for(String costType in object["CostTypes"]) {
       Map? temp = getObjectByUID(character, costType);
-      log(temp.toString());
+      //log(temp.toString());
       if(temp != null && temp["Amount"] != null) {
         sum += temp["Amount"] as int;
       }
@@ -344,14 +344,14 @@ List<List<String>> getFailedRequirements(Map object, Map gameData, Map character
           failedAnd.add(dependency);
           andLine = false;
         } else {
-          log(character[type].toString());
+          //log(character[type].toString());
           if(!containsAttribute(character[type], dependency.toString(), "UID")) {
             failedAnd.add(dependency);
             andLine = false;
           }
         }
       }
-      log('andLine: ${andLine.toString()} failed\n + ${failedAnd.toString()}');
+      //log('andLine: ${andLine.toString()} failed\n + ${failedAnd.toString()}');
       if(failedAnd.isNotEmpty) failedRequirements.add(failedAnd);
       if(andLine) clearedDependencies = true;
     }
@@ -377,15 +377,15 @@ List<List<String>> getFailedRequirements(Map object, Map gameData, Map character
 }
 
 bool containsAttribute(List? arr, String target, String attribute) {
-  log(arr.toString());
-  log(target.toString());
+  //log(arr.toString());
+  //log(target.toString());
   if(arr == null) return false;
   for(String dependency in arr) {
     if(dependency == target) {
-      log("Contains");
+      //log("Contains");
       return true;
     }
   }
-  log("Not Contain");
+  //log("Not Contain");
   return false;
 }

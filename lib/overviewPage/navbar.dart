@@ -26,8 +26,8 @@ List<BottomNavigationBarItem> getBottomTabs(List<tabItem> tabs) {
 int currentIndex = 0;
 Future<List<BottomNavigationBarItem>> getTabsFromData(selectedCharacter) async {
     Map? localPlayerData = await playerDataFuture;
-    log("NavBar");
-    log(localPlayerData.toString());
+    //log("NavBar");
+    //log(localPlayerData.toString());
     Map? character = getObjectByAttribute(localPlayerData!["characters"], selectedCharacter, "id");
     if(character == null) {
       return Future.error("Could not find Character");

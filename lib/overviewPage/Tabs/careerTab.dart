@@ -9,7 +9,7 @@ Widget CareerTab(BuildContext context, Function mainSetState, {String? listName}
   return FutureBuilder(
       future: compiledCharacterFuture,
       builder: (BuildContext context, AsyncSnapshot character) {
-        log(character.toString());
+        //log(character.toString());
         if (character.connectionState != ConnectionState.done) {
           return Center(
             child: Column(

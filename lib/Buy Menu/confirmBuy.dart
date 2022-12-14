@@ -26,29 +26,36 @@ class _ConfirmBuyState extends State<ConfirmBuy> {
     Map object = (ModalRoute.of(context)!.settings.arguments as BuyObjectCarrier).object;
     Map gameData = (ModalRoute.of(context)!.settings.arguments as BuyObjectCarrier).gameData;
     Map character = (ModalRoute.of(context)!.settings.arguments as BuyObjectCarrier).character;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Buy ${object["Name"]}'),
-      ),
-      body: SizedBox(
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("This item costs ${(ModalRoute.of(context)!.settings.arguments as BuyObjectCarrier).discountCost}", style: const TextStyle(fontSize: 20)),
-              const Text("How do you want to pay?", style: TextStyle(fontSize: 20)),
-              Text("Total so far: ${getSum()}"),
-              Expanded(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: buildCostWidgetList(gameData, character, object, (ModalRoute.of(context)!.settings.arguments as BuyObjectCarrier).playerId, context, setState),
+    return WillPopScope(
+      onWillPop: () async {
+        controllers = [];
+        costSum = {};
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Buy ${object["Name"]}'),
+        ),
+        body: SizedBox(
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("This item costs ${(ModalRoute.of(context)!.settings.arguments as BuyObjectCarrier).discountCost}", style: const TextStyle(fontSize: 20)),
+                const Text("How do you want to pay?", style: TextStyle(fontSize: 20)),
+                Text("Total so far: ${getSum()}"),
+                Expanded(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: buildCostWidgetList(gameData, character, object, (ModalRoute.of(context)!.settings.arguments as BuyObjectCarrier).playerId, context, setState),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -84,7 +91,7 @@ List<Row> buildCostWidgetList(Map gameData, Map character, Map object, String pl
       TextEditingController tempController = controllers[i];
       rowList.add(Row(
         children: [
-          Text(costType!["Name"]),
+          Text(costType["Name"]),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(left: 30, right: 10),
@@ -100,7 +107,7 @@ List<Row> buildCostWidgetList(Map gameData, Map character, Map object, String pl
                   _setState(() {
                     localUpdate = true;
                     String temp = value;
-                    if(temp == "") temp = "0";
+                    if(temp == null || temp == "") temp = "0";
                     if(int.parse(temp) > costType["Amount"]) {
                       value = costType["Amount"].toString();
                       temp = costType["Amount"].toString();
@@ -131,7 +138,7 @@ List<Row> buildCostWidgetList(Map gameData, Map character, Map object, String pl
                     "UID": object["UID"],
                     "costs": costSum,
                   };
-                  Map response = await webRequest(true, "/buy", obj);
+                  Map response = await jsonDecodeFutureMap(webRequest(true, "/buy", obj));
                   //log(response.toString());
                   if(response["statusCode"] == 200) {
                     showToast("Bought");
@@ -139,6 +146,8 @@ List<Row> buildCostWidgetList(Map gameData, Map character, Map object, String pl
                     showToast("Failed to buy");
                   }
                   playerDataFuture = getPlayerDataFuture((ModalRoute.of(context)!.settings.arguments as BuyObjectCarrier).playerId);
+                  costSum = {};
+                  controllers = [];
                   Navigator.pop(context);
                 } else {
                   showToast("Total must add up to Cost");

@@ -26,7 +26,7 @@ class _RaceInfoState extends State<RaceInfo> {
               race!["playerRestrictions"]
           ),
           Text(
-              race!["description"]
+              race["description"]
           ),
         ],
       )
