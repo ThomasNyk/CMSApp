@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:cms_for_real/Buy%20Menu/redeemToken.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +28,7 @@ class MyDrawer extends StatelessWidget {
               child: Center(
                 child:  Center(
                   child: Text(
-                    'Aquire Menu',
+                    'Acquire Menu',
                     style: TextStyle(
                       fontSize: 30,
                     ),

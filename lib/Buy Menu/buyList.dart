@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:cms_for_real/main.dart';
 import 'package:cms_for_real/overviewPage/Tabs/abilitiesTab.dart';
 import 'package:flutter/material.dart';
@@ -43,18 +41,7 @@ class BuyList extends StatefulWidget {
 
 class _BuyListState extends State<BuyList> {
 
-
-
   @override
-  /*
-  void initState() {
-    super.initState();
-    characterFuture = getAbilitiesFuture(widget.playerId, widget.characterId);
-  }
-   */
-
-
-
   Widget build(BuildContext context) {
     characterFuture = getCompiledCharacterFuture(widget.playerId, widget.characterId);
     return FutureBuilder(
@@ -98,9 +85,6 @@ class _BuyListState extends State<BuyList> {
 }
 
 List<Widget> buildBuyList(String playerID, Map character, Map gameData, String listName, BuildContext context, Function buyAbilitySetState, Function mainSetState) {
-  //log("Character:");
-  //log(character["AbiList"].toString());
-  //log(gameData["AbiList"][0].toString());
   character[listName] ??= [];
   List<Widget> output = [];
   List<Widget> notMetList = [];
@@ -108,8 +92,7 @@ List<Widget> buildBuyList(String playerID, Map character, Map gameData, String l
   for(int i = 0; i < gameData[listName].length; i++) {
     bool bought = character[listName].contains(gameData[listName][i]["UID"]);
     List<List<String>> failedRequirements = getFailedRequirements(gameData[listName][i], gameData, character);
-    //log("Failed Req: ${gameData[listName][i]}");
-    //log(failedRequirements.toString());
+
     if((failedRequirements.isEmpty || failedRequirements[0].isEmpty)&& !bought) {
       output.add(buildItemEntry(playerID, character, gameData[listName][i], context, true, false, gameData, buyAbilitySetState, mainSetState));
     } else if(!bought){
@@ -165,7 +148,6 @@ List<Widget> buildBuyList(String playerID, Map character, Map gameData, String l
     output += boughtList;
   }
 
-
   return output;
 }
 
@@ -190,33 +172,6 @@ Widget buildItemEntry(String playerId, Map character, Map ability, BuildContext 
         mainSetState(() {
           playerDataFuture = getPlayerDataFuture(playerId);
         });
-        /*
-        showDialog(context: context, builder: (context) => AlertDialog(
-          title: Text("Are you sure you want to buy: " + ability["Name"]),
-          content: Text("The ability costs: " + ability["Cost"].toString()),
-          actions: [
-            TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text("Cancel")),
-            TextButton(
-                onPressed: () async {
-                  Map requestObj = {
-                    "id": playerId,
-                    "characterId": characterId,
-                    "objectId": ability["UID"],
-                  };
-                  await webRequest(true, "buy", requestObj);
-                  reFetchData(playerId, mainSetState);
-                  buyAbilitySetState(() {
-                    getAbilitiesFuture(playerId, characterId);
-                  });
-                  Navigator.pop(context);
-                },
-                child: const Text("Buy"))
-          ],
-        ))*/
       }
     },
     child: Card(

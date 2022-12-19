@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:flutter/material.dart';
@@ -123,76 +121,73 @@ class RegisterPage extends StatelessWidget {
     });
     userController.text = "";
     passController.text = "";
-    return WillPopScope(
-      onWillPop: () async => false,
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: const Text('Register'),
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              Center(
-                child: Padding(padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
-                  child: Text("Username",
-                    style: textStyle,
-                  ),
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: true,
+        title: const Text('Register'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Center(
+              child: Padding(padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
+                child: Text("Username",
+                  style: textStyle,
                 ),
               ),
-              Padding(padding: const EdgeInsets.fromLTRB(30, 0, 30, 10),
-                child: TextField(
-                  controller: userController,
-                  textInputAction: TextInputAction.next,
-                  onChanged: (String? value) {
-                    username = value!;
-                  },
-                  style: textfieldStyle,
-                  decoration: InputDecoration(
-                      labelText: "Username",
-                      alignLabelWithHint: true,
-                      labelStyle: TextStyle(
-                        color: mainTheme.secondary,
-                      )
-                  ),
+            ),
+            Padding(padding: const EdgeInsets.fromLTRB(30, 0, 30, 10),
+              child: TextField(
+                controller: userController,
+                textInputAction: TextInputAction.next,
+                onChanged: (String? value) {
+                  username = value!;
+                },
+                style: textfieldStyle,
+                decoration: InputDecoration(
+                    labelText: "Username",
+                    alignLabelWithHint: true,
+                    labelStyle: TextStyle(
+                      color: mainTheme.secondary,
+                    )
                 ),
               ),
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
-                  child: Text("Password",
-                    style: textStyle,
-                  ),
+            ),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
+                child: Text("Password",
+                  style: textStyle,
                 ),
               ),
-              const Padding(padding: EdgeInsets.fromLTRB(30, 0, 30, 0),
-                  child: passwordField()
-              ),
-              Padding(padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: checkboxTwo(),
+            ),
+            const Padding(padding: EdgeInsets.fromLTRB(30, 0, 30, 0),
+                child: passwordField()
+            ),
+            Padding(padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: checkboxTwo(),
+                  ),
+                  Padding(padding: const EdgeInsets.fromLTRB(10, 0, 30, 0),
+                    child: TextButton(onPressed: () {
+                      checkLogin(context);
+                    }, style: ButtonStyle(
+                      foregroundColor: MaterialStateProperty.all<Color>(mainTheme.secondary),
+                      backgroundColor: MaterialStateProperty.all<Color>(mainTheme.primary),
                     ),
-                    Padding(padding: const EdgeInsets.fromLTRB(10, 0, 30, 0),
-                      child: TextButton(onPressed: () {
-                          checkLogin(context);
-                      }, style: ButtonStyle(
-                          foregroundColor: MaterialStateProperty.all<Color>(mainTheme.secondary),
-                          backgroundColor: MaterialStateProperty.all<Color>(mainTheme.primary),
-                        ),
-                        child: const Text("Log In",),
-                      ),
+                      child: const Text("Register",),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(10, 25, 10, 0),
-                child: checkbox(),
-              ),
-            ],
-          ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(10, 25, 10, 0),
+              child: checkbox(),
+            ),
+          ],
         ),
       ),
     );
