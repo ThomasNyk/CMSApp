@@ -24,7 +24,7 @@ import 'overviewPage/Tabs/raceTab.dart';
 
 const online = true;
 
-const ip = online ? '192.38.10.90:22115' : '192.168.0.139:3000';
+const ip = online ? '192.38.10.90:22115' : '127.0.0.1:3000';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const storage = FlutterSecureStorage();
