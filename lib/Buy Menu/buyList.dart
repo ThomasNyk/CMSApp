@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cms_for_real/main.dart';
 import 'package:cms_for_real/overviewPage/Tabs/abilitiesTab.dart';
 import 'package:flutter/material.dart';
@@ -88,19 +90,31 @@ List<Widget> buildBuyList(String playerID, Map character, Map gameData, String l
   character[listName] ??= [];
   List<Widget> output = [];
   List<Widget> notMetList = [];
+  List<Widget> cantAffordList = [];
   List<Widget> boughtList = [];
   for(int i = 0; i < gameData[listName].length; i++) {
     bool bought = character[listName].contains(gameData[listName][i]["UID"]);
     List<List<String>> failedRequirements = getFailedRequirements(gameData[listName][i], gameData, character);
+    List<List<String>> cantafford = getCantAfford(gameData[listName][i], gameData, character);
+    //log(cantafford.toString());
 
-    if((failedRequirements.isEmpty || failedRequirements[0].isEmpty)&& !bought) {
+    if((failedRequirements.isEmpty || failedRequirements[0].isEmpty) && !bought && cantafford[0].isEmpty) {
       output.add(buildItemEntry(playerID, character, gameData[listName][i], context, true, false, gameData, buyAbilitySetState, mainSetState));
-    } else if(!bought){
+    } else if(!bought && (failedRequirements.isEmpty || failedRequirements[0].isEmpty) && cantafford[0].isNotEmpty){
+      cantAffordList.add(buildItemEntry(playerID, character, gameData[listName][i], context, true, false, gameData, buyAbilitySetState, mainSetState, failedRequirements: cantafford));
+    } else if(!bought && (failedRequirements.isNotEmpty || failedRequirements[0].isNotEmpty)) {
+      if(cantafford[0].isNotEmpty) {
+        failedRequirements = cantafford += failedRequirements;
+      }
       notMetList.add(buildItemEntry(playerID, character, gameData[listName][i], context, false, false, gameData, buyAbilitySetState, mainSetState, failedRequirements: failedRequirements));
     } else {
       boughtList.add(buildItemEntry(playerID, character, gameData[listName][i], context, false, true, gameData, buyAbilitySetState, mainSetState));
     }
   }
+  log(output.length.toString());
+  log(notMetList.length.toString());
+  log(cantAffordList.length.toString());
+  log(boughtList.length.toString());
   if(output.isNotEmpty) {
     output.insert(0, Container(
       color: Colors.black,
@@ -116,7 +130,7 @@ List<Widget> buildBuyList(String playerID, Map character, Map gameData, String l
     );
   }
 
-  if(notMetList.isNotEmpty) {
+  if(cantAffordList.isNotEmpty) {
     output.add(Container(
       color: Colors.black,
       height: 25,
@@ -124,6 +138,22 @@ List<Widget> buildBuyList(String playerID, Map character, Map gameData, String l
         padding: EdgeInsets.symmetric(horizontal: 0, vertical: 4),
         child: Center(
           child: Text("Can't afford",
+            style: TextStyle(color: Colors.white),),
+        ),
+      ),
+    ),
+    );
+    output += cantAffordList;
+  }
+
+  if(notMetList.isNotEmpty) {
+    output.add(Container(
+      color: Colors.black,
+      height: 25,
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+        child: Center(
+          child: Text("Requirements not met",
             style: TextStyle(color: Colors.white),),
         ),
       ),
@@ -224,7 +254,6 @@ List<Widget> buildFailedRequirementsWidget(List<List<String>>? failedRequirement
     String text = "";
     for(String dependencyPart in list) {
       Map? temp = getObjectByUID(gameInfo, dependencyPart);
-      //log(temp.toString());
       temp ??= {"Name": dependencyPart};
       text += temp["Name"] + " ";
     }
@@ -263,9 +292,8 @@ int checkDiscounts(Map object, character) {
   return cost;
 }
 
-List<List<String>> getFailedRequirements(Map object, Map gameData, Map character) {
+List<List<String>> getCantAfford(Map object, Map gameData, Map character) {
   List<List<String>> failedRequirements = [];
-  //log(object.toString());
   //Cost
   int sum = 0;
   bool clearedCost = false;
@@ -286,6 +314,37 @@ List<List<String>> getFailedRequirements(Map object, Map gameData, Map character
   } else {
     failedRequirements.add(["Cost: Required: ", cost.toString(), " - In inventory: ", sum.toString()]);
   }
+
+  if(clearedCost) return [[]];
+
+  return failedRequirements;
+}
+
+List<List<String>> getFailedRequirements(Map object, Map gameData, Map character) {
+  List<List<String>> failedRequirements = [];
+  //log(object.toString());
+  /*
+  //Cost
+  int sum = 0;
+  bool clearedCost = false;
+
+  if(!(object["CostTypes"] == null && object["CostTypes"].isEmpty)) {
+    for(String costType in object["CostTypes"]) {
+      Map? temp = getObjectByUID(character, costType);
+      //log(temp.toString());
+      if(temp != null && temp["Amount"] != null) {
+        sum += temp["Amount"] as int;
+      }
+    }
+  }
+
+  int cost = checkDiscounts(object, character);
+  if(sum >= cost) {
+    clearedCost = true;
+  } else {
+    failedRequirements.add(["Cost: Required: ", cost.toString(), " - In inventory: ", sum.toString()]);
+  }
+   */
 
   //Dependencies
   bool clearedDependencies = false;
@@ -324,7 +383,7 @@ List<List<String>> getFailedRequirements(Map object, Map gameData, Map character
     }
   }
 
-  if(clearedCost && clearedDependencies && clearedExclusions) {
+  if(clearedDependencies && clearedExclusions) {
     return [[]];
   }
 
