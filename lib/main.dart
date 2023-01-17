@@ -62,7 +62,6 @@ void main() {
   runApp(const MyApp());
   storage.read(key: "selectedCharacter").then((value) => selectedCharacter = value ?? "");
   //log("asdasdasdlkm" + selectedCharacter);
-  2 + 2;
 }
 
 void fetchGameData() async {
@@ -101,7 +100,6 @@ Future<Map?> getPlayerDataFuture(playerId) async {
 
 Future<http.Response> webRequest(bool post, String destination, Object? requestObj) async {
   var url = Uri.http(ip, destination);
-  var response;
   var parsedObj = jsonEncode(requestObj);
   if(post) {
     if(requestObj == null) {
