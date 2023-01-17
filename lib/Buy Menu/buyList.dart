@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 late Future<Map?> characterFuture;
+TextEditingController searchController = TextEditingController();
 
 Future<Map?> getCharacterFuture(String playerId, String characterId) async {
   Map requestObj = {
@@ -44,8 +45,13 @@ class BuyList extends StatefulWidget {
 class _BuyListState extends State<BuyList> {
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
     characterFuture = getCompiledCharacterFuture(widget.playerId, widget.characterId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return FutureBuilder(
       future: characterFuture,
       builder: (BuildContext context, AsyncSnapshot characterSnapshot) {
@@ -69,15 +75,34 @@ class _BuyListState extends State<BuyList> {
               onRefresh: () async {
                 //log("REFRESH");
                 await Future.delayed(const Duration(seconds: 1));
+                searchController.text = "";
                 setState(() {
                   playerDataFuture = getPlayerDataFuture(widget.playerId);
                   compiledCharacterFuture = getCompiledCharacterFuture(widget.playerId, widget.characterId);
                 });
               },
-              child: ListView(
-                //crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: buildBuyList(widget.playerId, characterSnapshot.data, widget.gameData, widget.listName, context, setState, widget.mainSetState)
-              ),
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search)
+                    ),
+                    controller: searchController,
+                    maxLines: 1,
+                    onChanged: (value) {
+                      setState(() {
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: ListView(
+                      //crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: buildBuyList(widget.playerId, characterSnapshot.data, widget.gameData, widget.listName, context, setState, widget.mainSetState)
+                    ),
+                  ),
+                ],
+              )
+
             )
           );
         }
@@ -86,29 +111,44 @@ class _BuyListState extends State<BuyList> {
   }
 }
 
+List<Map<String, dynamic>> Filter(List<dynamic> gameList, String filter) {
+  List<Map<String, dynamic>> result = [];
+  for (var element in gameList) {
+    if(element["Name"].toLowerCase().contains(filter.toLowerCase())) {
+      result.add(element);
+    }
+  }
+  return result;
+}
+
 List<Widget> buildBuyList(String playerID, Map character, Map gameData, String listName, BuildContext context, Function buyAbilitySetState, Function mainSetState) {
   character[listName] ??= [];
   List<Widget> output = [];
   List<Widget> notMetList = [];
   List<Widget> cantAffordList = [];
   List<Widget> boughtList = [];
-  for(int i = 0; i < gameData[listName].length; i++) {
-    bool bought = character[listName].contains(gameData[listName][i]["UID"]);
-    List<List<String>> failedRequirements = getFailedRequirements(gameData[listName][i], gameData, character);
-    List<List<String>> cantafford = getCantAfford(gameData[listName][i], gameData, character);
+
+  log(gameData[listName].runtimeType.toString());
+
+  List<dynamic> filtered = Filter(gameData[listName], searchController.text);
+
+  for(int i = 0; i < filtered.length; i++) {
+    bool bought = character[listName].contains(filtered[i]["UID"]);
+    List<List<String>> failedRequirements = getFailedRequirements(filtered[i], gameData, character);
+    List<List<String>> cantafford = getCantAfford(filtered[i], gameData, character);
     //log(cantafford.toString());
 
     if((failedRequirements.isEmpty || failedRequirements[0].isEmpty) && !bought && cantafford[0].isEmpty) {
-      output.add(buildItemEntry(playerID, character, gameData[listName][i], context, true, false, gameData, buyAbilitySetState, mainSetState));
+      output.add(buildItemEntry(playerID, character, filtered[i], context, true, false, gameData, buyAbilitySetState, mainSetState));
     } else if(!bought && (failedRequirements.isEmpty || failedRequirements[0].isEmpty) && cantafford[0].isNotEmpty){
-      cantAffordList.add(buildItemEntry(playerID, character, gameData[listName][i], context, true, false, gameData, buyAbilitySetState, mainSetState, failedRequirements: cantafford));
+      cantAffordList.add(buildItemEntry(playerID, character, filtered[i], context, true, false, gameData, buyAbilitySetState, mainSetState, failedRequirements: cantafford));
     } else if(!bought && (failedRequirements.isNotEmpty || failedRequirements[0].isNotEmpty)) {
       if(cantafford[0].isNotEmpty) {
         failedRequirements = cantafford += failedRequirements;
       }
-      notMetList.add(buildItemEntry(playerID, character, gameData[listName][i], context, false, false, gameData, buyAbilitySetState, mainSetState, failedRequirements: failedRequirements));
+      notMetList.add(buildItemEntry(playerID, character, filtered[i], context, false, false, gameData, buyAbilitySetState, mainSetState, failedRequirements: failedRequirements));
     } else {
-      boughtList.add(buildItemEntry(playerID, character, gameData[listName][i], context, false, true, gameData, buyAbilitySetState, mainSetState));
+      boughtList.add(buildItemEntry(playerID, character, filtered[i], context, false, true, gameData, buyAbilitySetState, mainSetState));
     }
   }
   log(output.length.toString());
