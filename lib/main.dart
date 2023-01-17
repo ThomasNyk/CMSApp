@@ -62,6 +62,7 @@ void main() {
   runApp(const MyApp());
   storage.read(key: "selectedCharacter").then((value) => selectedCharacter = value ?? "");
   //log("asdasdasdlkm" + selectedCharacter);
+  2 + 2;
 }
 
 void fetchGameData() async {
