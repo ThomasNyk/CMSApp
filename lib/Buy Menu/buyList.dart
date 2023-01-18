@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:cms_for_real/main.dart';
 import 'package:cms_for_real/overviewPage/Tabs/abilitiesTab.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +5,7 @@ import 'package:flutter/rendering.dart';
 
 late Future<Map?> characterFuture;
 TextEditingController searchController = TextEditingController();
+String hideShowExclusions = "Show";
 
 Future<Map?> getCharacterFuture(String playerId, String characterId) async {
   Map requestObj = {
@@ -70,6 +69,19 @@ class _BuyListState extends State<BuyList> {
           return Scaffold(
             appBar: AppBar(
               title: Text('Buy ${widget.prettyName} for ${characterSnapshot.data["name"]}'),
+              actions: <Widget>[
+                PopupMenuButton<String>(
+                  onSelected: (value) => handleClick(setState),
+                  itemBuilder: (BuildContext context) {
+                    return {'$hideShowExclusions exclusions'}.map((String choice) {
+                      return PopupMenuItem<String>(
+                        value: choice,
+                        child: Text(choice),
+                      );
+                    }).toList();
+                  },
+                ),
+              ],
             ),
             body: RefreshIndicator(
               onRefresh: () async {
@@ -111,13 +123,56 @@ class _BuyListState extends State<BuyList> {
   }
 }
 
-List<Map<String, dynamic>> Filter(List<dynamic> gameList, String filter) {
+List<Map<String, dynamic>> Filter(List<dynamic> gameList, String filter, Map gameData, Map character) {
   List<Map<String, dynamic>> result = [];
   for (var element in gameList) {
-    if(element["Name"].toLowerCase().contains(filter.toLowerCase())) {
-      result.add(element);
+    if (element["Name"].toLowerCase().contains(filter.toLowerCase())) {
+      List<List<String>>? exclusions = getExclusions(gameData, element["UID"], character);
+
+      if (hideShowExclusions == "Hide" || exclusions == null) {
+        result.add(element);
+      }
     }
   }
+
+  return result;
+}
+
+void handleClick(Function setStater) {
+
+  setStater(() {
+    if(hideShowExclusions == "Hide") {
+      hideShowExclusions = "Show";
+    } else {
+      hideShowExclusions = "Hide";
+    }
+  });
+}
+
+List<List<String>>? getExclusions(Map gameData, String uid, Map character) {
+  Map? obj = getObjectByUID(gameData, uid);
+
+  if(obj == null) return null;
+
+  List<dynamic> exclusions = obj["Exclusions"];
+  if(exclusions.isEmpty) return null;
+
+  List<List<String>> result = [];
+
+  for (dynamic exclusion in exclusions) {
+    String listName = exclusion.toString().split("-/")[0];
+    List<dynamic> list = character[listName] as List<dynamic>;
+    for(String item in list) {
+      if(item == exclusion) {
+        Map? temp = getObjectByUID(gameData, item);
+        temp ??= {"Name": "UndefinedName"};
+        result.add(["Excluded: ${temp["Name"]}"]);
+      }
+    }
+  }
+
+  if(result.isEmpty) return null;
+
   return result;
 }
 
@@ -128,9 +183,7 @@ List<Widget> buildBuyList(String playerID, Map character, Map gameData, String l
   List<Widget> cantAffordList = [];
   List<Widget> boughtList = [];
 
-  log(gameData[listName].runtimeType.toString());
-
-  List<dynamic> filtered = Filter(gameData[listName], searchController.text);
+  List<dynamic> filtered = Filter(gameData[listName], searchController.text, gameData, character);
 
   for(int i = 0; i < filtered.length; i++) {
     bool bought = character[listName].contains(filtered[i]["UID"]);
@@ -141,7 +194,7 @@ List<Widget> buildBuyList(String playerID, Map character, Map gameData, String l
     if((failedRequirements.isEmpty || failedRequirements[0].isEmpty) && !bought && cantafford[0].isEmpty) {
       output.add(buildItemEntry(playerID, character, filtered[i], context, true, false, gameData, buyAbilitySetState, mainSetState));
     } else if(!bought && (failedRequirements.isEmpty || failedRequirements[0].isEmpty) && cantafford[0].isNotEmpty){
-      cantAffordList.add(buildItemEntry(playerID, character, filtered[i], context, true, false, gameData, buyAbilitySetState, mainSetState, failedRequirements: cantafford));
+      cantAffordList.add(buildItemEntry(playerID, character, filtered[i], context, false, false, gameData, buyAbilitySetState, mainSetState, failedRequirements: cantafford));
     } else if(!bought && (failedRequirements.isNotEmpty || failedRequirements[0].isNotEmpty)) {
       if(cantafford[0].isNotEmpty) {
         failedRequirements = cantafford += failedRequirements;
@@ -151,10 +204,6 @@ List<Widget> buildBuyList(String playerID, Map character, Map gameData, String l
       boughtList.add(buildItemEntry(playerID, character, filtered[i], context, false, true, gameData, buyAbilitySetState, mainSetState));
     }
   }
-  log(output.length.toString());
-  log(notMetList.length.toString());
-  log(cantAffordList.length.toString());
-  log(boughtList.length.toString());
   if(output.isNotEmpty) {
     output.insert(0, Container(
       color: Colors.black,
