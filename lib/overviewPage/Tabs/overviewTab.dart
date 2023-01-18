@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:cms_for_real/Buy%20Menu/buyList.dart';
 import 'package:flutter/material.dart';
 import '../../main.dart';
@@ -105,13 +104,7 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
                           children: [
                             GestureDetector(
                               onTap: (() {
-                                showDialog(context: context, builder: (context) => AlertDialog(
-                                  title: const Text("Oops"),
-                                  content: const Text("Contrary to popular belief this is not meant to be a button"),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK")),
-                                  ],
-                                ));
+                                Scaffold.of(context).openDrawer();
                               }),
                               child: Card(
                                 child: Align(
@@ -169,41 +162,46 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
                                 ),
                               ),
                             ),
-                            (sections.length > 1 && sections[1].isNotEmpty) ? Card(
-                                child: Column(
-                                  children: [
-                                    const Text("XP"),
-                                    Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 0.0),
-                                        child: GridView.builder(
-                                            physics: const NeverScrollableScrollPhysics(),
-                                            shrinkWrap: true,
-                                            itemCount: sections[1].length,
-                                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, childAspectRatio: 2),
-                                            itemBuilder: (BuildContext context, int index) {
-                                              return Column(
-                                                children: [
-                                                  Card(
-                                                    color: Colors.greenAccent,
-                                                    shape: BeveledRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(20.0),
-                                                    ),
-                                                    semanticContainer: false,
-                                                    child: GridTile(
-                                                      child: Center(
-                                                          child: Text(sections[1][index]['Amount'].toString(), textScaleFactor: 1.25)
+                            (sections.length > 1 && sections[1].isNotEmpty) ? GestureDetector(
+                              onTap: () {
+                                Scaffold.of(context).openDrawer();
+                              },
+                              child: Card(
+                                  child: Column(
+                                    children: [
+                                      const Text("XP"),
+                                      Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 0.0),
+                                          child: GridView.builder(
+                                              physics: const NeverScrollableScrollPhysics(),
+                                              shrinkWrap: true,
+                                              itemCount: sections[1].length,
+                                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, childAspectRatio: 2),
+                                              itemBuilder: (BuildContext context, int index) {
+                                                return Column(
+                                                  children: [
+                                                    Card(
+                                                      color: Colors.greenAccent,
+                                                      shape: BeveledRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(20.0),
+                                                      ),
+                                                      semanticContainer: false,
+                                                      child: GridTile(
+                                                        child: Center(
+                                                            child: Text(sections[1][index]['Amount'].toString(), textScaleFactor: 1.25)
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                  Center(
-                                                    child: Text(sections[1][index]["Name"].toString(),),
-                                                  ),
-                                                ],
-                                              );
-                                            })
-                                    ),
-                                  ],
-                                )
+                                                    Center(
+                                                      child: Text(sections[1][index]["Name"].toString(),),
+                                                    ),
+                                                  ],
+                                                );
+                                              })
+                                      ),
+                                    ],
+                                  )
+                              ),
                             )
                             : Container(),
                             (sections.length > 2 && sections[2].isNotEmpty) ? Card(
