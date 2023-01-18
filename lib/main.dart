@@ -255,6 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   if(!snapshotTwo.hasData) {
                     return const Text("Loading");
                   } else {
+
                     if(needsTabs(snapshotTwo.data)) {
                       return BottomNavigationBar(
                           type: BottomNavigationBarType.fixed,
