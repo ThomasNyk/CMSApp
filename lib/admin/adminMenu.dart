@@ -103,8 +103,7 @@ Widget playerList(Function setState, BuildContext context, String playerId) {
           controller: searchController,
           maxLines: 1,
           onChanged: (value) {
-            setState(() {
-            });
+            setState(() {});
           },
         ),
         Expanded(

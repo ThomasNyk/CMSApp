@@ -353,21 +353,6 @@ List<Widget> buildFailedRequirementsWidget(List<List<String>>? failedRequirement
 
   return output;
 }
-/*
-List<List<String>> getFailedRequirements(Map object, Map gameData, Map character) {
-  List<List<String>> failedRequirements = [];
-  for(List dependencyOr in object["Dependency"]) {
-    bool orLine = false;
-    for(String dependency in dependencyOr) {
-      String type = dependency.split("-/")[0];
-      if(character[type] == null) return [['No list: $type']];
-      if(containsAttribute(character[type], dependency, "UID")) orLine = true;
-    }
-    if(!orLine) failedRequirements.add(dependencyOr.map((e) => e.toString()).toList());
-  }
-  if(failedRequirements.isEmpty) return [[]];
-  return failedRequirements;
-}*/
 int checkDiscounts(Map object, character) {
   int cost = object["Cost"];
   if(object["Discounts"] == null || object["Discounts"].isEmpty) return cost;
@@ -411,29 +396,6 @@ List<List<String>> getCantAfford(Map object, Map gameData, Map character) {
 
 List<List<String>> getFailedRequirements(Map object, Map gameData, Map character) {
   List<List<String>> failedRequirements = [];
-  //log(object.toString());
-  /*
-  //Cost
-  int sum = 0;
-  bool clearedCost = false;
-
-  if(!(object["CostTypes"] == null && object["CostTypes"].isEmpty)) {
-    for(String costType in object["CostTypes"]) {
-      Map? temp = getObjectByUID(character, costType);
-      //log(temp.toString());
-      if(temp != null && temp["Amount"] != null) {
-        sum += temp["Amount"] as int;
-      }
-    }
-  }
-
-  int cost = checkDiscounts(object, character);
-  if(sum >= cost) {
-    clearedCost = true;
-  } else {
-    failedRequirements.add(["Cost: Required: ", cost.toString(), " - In inventory: ", sum.toString()]);
-  }
-   */
 
   //Dependencies
   bool clearedDependencies = false;

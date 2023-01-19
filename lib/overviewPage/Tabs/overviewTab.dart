@@ -89,9 +89,6 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
 
                       }
                       List<List<Map>> sections = getSections(characterSnapShot.data, gameDataSnapshot.data);
-                      //log("Sections:");
-                      //log(sections.toString());
-                      //log("http://$ip/${characterSnapShot.data["image"]}");
                       return RefreshIndicator(
                         onRefresh: () async {
                           mainSetState(() {
@@ -103,6 +100,7 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
                         child: ListView(
                           children: [
                             GestureDetector(
+                              //When child of GestureDetector is tapped the drawer will open: Child: Card - which here is the character-stat-Card
                               onTap: (() {
                                 Scaffold.of(context).openDrawer();
                               }),
@@ -163,6 +161,7 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
                               ),
                             ),
                             (sections.length > 1 && sections[1].isNotEmpty) ? GestureDetector(
+                              //When child of GestureDetector is tapped the drawer will open: Child: Card - which here is the XP-Card
                               onTap: () {
                                 Scaffold.of(context).openDrawer();
                               },
@@ -305,24 +304,23 @@ FutureBuilder OverviewTab(BuildContext context, Function mainSetState, {String? 
     },
   );
 }
-
+//Gets XP and Valuta Sections. Outer List is 1:XP 2: Valuta 3: Misc. Inner is A map with name, and value/amount
 List<List<Map>> getSections(Map character, Map gameData) {
   List<List<Map>> output = [];
-  //log("Sections");
   if(character["ResList"] == null) character["ResList"] = [];
   if(character["RacList"][0] != null) {
     output.add([{
       "RacList": ["${character["RacList"][0]}"]
     }]);
   }
+
   for(Map item in character["ResList"]) {
-    //log(item.toString());
     Map? gameDataItem = getObjectByUID(gameData, item["UID"]);
     if(gameDataItem == null) {
       continue;
     }
     gameDataItem["Amount"] = item["Amount"];
-    //log("Get Sections: ${gameDataItem["Type"].toString()} : ${output.length}");
+
     while(gameDataItem["Type"] >= output.length) {
       output.add([]);
     }
@@ -331,6 +329,7 @@ List<List<Map>> getSections(Map character, Map gameData) {
   return output;
 }
 
+//Get characters stats for the overviewTab based on abilities, career and such
 List<Widget> getStatsWidgets(List<Map> elements, Map gameInfo) {
   //log("getStatsWidgets");
   //log(elements.toString());

@@ -36,7 +36,8 @@ Future<List<BottomNavigationBarItem>> getTabsFromData(selectedCharacter) async {
     List<tabItem> bottomTabs = [tabItem(
         "Home",
         const Icon(Icons.home))];
-
+    //This chain of if statements individually checks if bottomNavbarTab is needed. if they are the tabItem is added to the tabIndexToNameMap
+    //and the index is incremented;
     if(character["AbiList"] != null && character["AbiList"].isNotEmpty) {
       //log("Adding AbilityNavElement");
       bottomTabs.add(tabItem(

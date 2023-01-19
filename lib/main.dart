@@ -22,35 +22,41 @@ import 'overviewPage/Tabs/overviewTab.dart';
 import 'drawer.dart';
 import 'overviewPage/Tabs/raceTab.dart';
 
+
 const online = true;
 
 const ip = online ? '192.38.10.90:22115' : '127.0.0.1:3000';
 
+//Navigator key used for navigating between pages
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const storage = FlutterSecureStorage();
 
-String selectedCharacter = "009b1f49-21cb-4101-a904-4613f6a46c23";
 
+String selectedCharacter = "";
+
+//Completers are created so we can create futures that can be completed later
 Completer<Map?> _playerDataCompleter = Completer();
 Completer<Map?> _gameDataCompleter = Completer();
 Completer<Map?> _compiledCharacterCompleter = Completer();
 
+//Like promises in JS
 Future<Map?> playerDataFuture = _playerDataCompleter.future;
-
 Future<Map?> gameDataFuture = _gameDataCompleter.future;
-
 Future<Map?> compiledCharacterFuture = _compiledCharacterCompleter.future;
 
+//Since the bottonNavBar is dynamically genenerated a map is used to map an index(bottonNavBarIndex) to an index in an array of constructor-tearoff
 Map tabIndexToNameMap = {
-  0: 0
+  0: 0,
 };
 
+//Used to carry id between pages. Not always necessary
 class idCarrier {
   final String id;
 
   idCarrier(this.id);
 }
 
+//Used to carry gameDataFuture between pages. Not always necessary
 class gameDataFutureCarrier {
   final String id;
   final Future gameDataFuture;
@@ -58,38 +64,46 @@ class gameDataFutureCarrier {
   gameDataFutureCarrier(this.id, this.gameDataFuture);
 }
 
+//Start of app
 void main() {
   runApp(const MyApp());
   storage.read(key: "selectedCharacter").then((value) => selectedCharacter = value ?? "");
   //log("asdasdasdlkm" + selectedCharacter);
 }
 
+//Fetches gamedata and completed the _gameDataCompleter
 void fetchGameData() async {
   Map gameData = await jsonDecodeFutureMap(webRequest(true, "/getGameData", {}));
   _gameDataCompleter.complete(gameData);
 }
 
+//Not ideal but some functions like populateSideBar needs to be called later. There are surely better solutions. DO NOT TOUCH
 void delayed(Function function, argument, delayMs) async {
   await Future.delayed(Duration(milliseconds: delayMs));
   function(argument);
 }
 
+//I don't remember why this is necessary
 Future<Map?> delayedNavigator(String routeName, dynamic arguments, int delayMs) async {
   await Future.delayed(Duration(milliseconds: delayMs));
   //log(routeName);
   return Future.value(await navigatorKey.currentState!.pushNamed(routeName, arguments: arguments));
 }
-
+/*
+//Populates the sidebar with buttons d
 void populateSidebar (playerData) async {
   var LocalplayerData = await playerData;
   sidebarStream.stream.drain();
   List<String> output = [];
   for(int i = 0; i < (LocalplayerData["characters"] as List).length; i++) {
+    log(LocalplayerData["characters"][i]["name"].toString());
     output.add(LocalplayerData["characters"][i]["name"]);
   }
   sidebarStream.add(output);
 }
+*/
 
+//Gets PlayerData
 Future<Map?> getPlayerDataFuture(playerId) async {
   Object requestObj = {
     "id": playerId,
@@ -97,7 +111,7 @@ Future<Map?> getPlayerDataFuture(playerId) async {
   return Future.value(jsonDecodeFutureMap(webRequest(true, 'client/cms/playerData', requestObj)));
 }
 
-
+//Makes a general webrequest
 Future<http.Response> webRequest(bool post, String destination, Object? requestObj) async {
   var url = Uri.http(ip, destination);
   var parsedObj = jsonEncode(requestObj);
@@ -121,6 +135,7 @@ Future<http.Response> webRequest(bool post, String destination, Object? requestO
   }
    */
 }
+
 
 Future<Map> jsonDecodeFutureMap(Future<http.Response> response) async {
   log((await response).toString());
@@ -170,6 +185,7 @@ Future<dynamic> webRequest(bool post, String destination, Object? requestObj) as
 }
 */
 
+//Shows the popup messages called toasts
 void showToast(text) {
   Fluttertoast.showToast(
       msg: text.toString(),
@@ -181,6 +197,7 @@ void showToast(text) {
       fontSize: 16.0,
   );
 }
+
 
 Future<String> openLoginPage() async{
   Map<String, dynamic> loginData = jsonDecode((await navigatorKey.currentState!.pushNamed('/login')).toString());
@@ -198,6 +215,7 @@ Future<String?> getPlayerId() async {
   return Future.value(playerId);
 }
 
+//Home page state. SetState function from StateFullWidget class generates a new MyHomePageState
 class _MyHomePageState extends State<MyHomePage> {
 
   List<Widget Function(BuildContext context, Function mainSetState, {String? listName})> tabs = [
@@ -223,9 +241,10 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     String? listName = getListName(tabIndexToNameMap[currentIndex]);
+    //Returns a scaffold. Main screen widget that supports drawer, appbar, body, bottomNavigationBar and more.
     return Scaffold(
       onDrawerChanged: (isOpened) {
-        delayed(populateSidebar, playerDataFuture, 10);
+        //delayed(populateSidebar, playerDataFuture, 10);
       },
       drawer: MyDrawer(playerDataFuture: playerDataFuture, gameDataFuture: gameDataFuture, mainSetState: setState,),
       appBar: AppBar(
@@ -236,22 +255,24 @@ class _MyHomePageState extends State<MyHomePage> {
             if(!snapshot.hasData) {
               return const Text("Loading");
             } else {
-              return getPlayerDropdown(snapshot, setState, context);
+              return getCharacterDropdown(snapshot, setState, context);
             }
           },
         ),
       ),
+      //The array tab that return a tab dependent on currentIndex(from bottomBar) translated by tabIndexToNameMap
       body: tabs[tabIndexToNameMap[currentIndex]](context, setState, listName: listName),
       bottomNavigationBar: FutureBuilder(
+        //Dynamically gets tabs as all tabs are not always shown
         future: getTabsFromData(selectedCharacter),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
+          //Futurebuilder creates new snapshots when its future is changed. This means we can change what Futurebuilder returns based on a future
           if(!snapshot.hasData) {
             return const Text("Loading...");
           } else {
             return FutureBuilder(
                 future: playerDataFuture,
                 builder: (BuildContext context, AsyncSnapshot snapshotTwo) {
-                  //log(snapshotTwo.toString());
                   if(!snapshotTwo.hasData) {
                     return const Text("Loading");
                   } else {
@@ -264,6 +285,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           currentIndex: currentIndex,
                           onTap: (index) {
                             if(mounted) {
+                              //Setstate creates a new state of MyHomePageState
                               setState(() {
                                 currentIndex = index;
                               });
@@ -290,7 +312,8 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
-
+  
+  //Gets all futures from server. Opens LoginScreen if necessary
   bool onlyOnce = false;
   void getOnlineData(Future gameDataFuture) async {
     if(onlyOnce) {
@@ -306,22 +329,27 @@ class _MyHomePageState extends State<MyHomePage> {
         Future continueLoop = continueCompleter.future;
         getPlayerDataFuture(id).then((playerData) async {
           gotData = true;
+          
           while (playerData == null || playerData.isEmpty ||
               playerData["playerInfo"] == null) {
             playerData ??= {};
             playerData["playerInfo"] =
+            //opens createPlayerPage if no playerData exists
             (await navigatorKey.currentState!.pushNamed('/createPlayer', arguments: idCarrier(id!)));
           }
+          //opens createCharacterPage if no characterData exists
           while(playerData["characters"] == null) {
             playerData["characters"] = [(await navigatorKey.currentState!.pushNamed('/createCharacter', arguments: gameDataFutureCarrier(id!, gameDataFuture)))];
             selectedCharacter = playerData["characters"][playerData["characters"].length - 1]["id"].toString();
             storage.write(key: "selectedCharacter", value: selectedCharacter);
             playerDataFuture = getPlayerDataFuture(playerData["playerInfo"]["id"]);
           }
+          //Gets GameData
           gameDataFuture.then((gameData) async {
             if(getObjectByAttribute(playerData!["characters"], selectedCharacter, "id") == null) selectedCharacter = playerData["characters"][0]["id"];
             compiledCharacterFuture = getCompiledCharacterFuture(playerData["playerInfo"]["id"], selectedCharacter);
           });
+          //Completes playerDataFuture
           setState(() {
             _playerDataCompleter.complete(playerData);
           });
@@ -337,7 +365,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
     onlyOnce = true;
   }
-
+  
+  
   String? getListName(int tabIndexToNameMap) {
     switch (tabIndexToNameMap) {
       case 4:
@@ -354,6 +383,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+
 bool needsTabs(localPlayerData) {
   Map? player = getObjectByAttribute(localPlayerData["characters"], selectedCharacter, "id");
   if(player == null) {
@@ -365,7 +395,7 @@ bool needsTabs(localPlayerData) {
   return false;
 }
 
-DropdownButton getPlayerDropdown (snapshot, Function _setState, BuildContext context) {
+DropdownButton getCharacterDropdown (snapshot, Function _setState, BuildContext context) {
   List<DropdownMenuItem> DropdownItems = [];
   //log("getPlayerDropdown");
   //log(snapshot.data.toString());
@@ -379,16 +409,6 @@ DropdownButton getPlayerDropdown (snapshot, Function _setState, BuildContext con
   }
   DropdownItems.add(DropdownMenuItem(
     value: "createCharacter",
-    /*
-    onTap: () {
-      //log("Clicked");
-      //log(navigatorKey.currentState!.toString());
-      //Navigator.pop(context);
-      delayedNavigator('/createCharacter', gameDataFutureCarrier(snapshot.data["playerInfo"]["id"]!, gameDataFuture), 1);
-      //navigatorKey.currentState!.pushNamed('/createCharacter');
-      //Navigator.push(context, MaterialPageRoute( builder: (context) { return const CreateCharacter(); }, ), );
-      //log("Navigated");
-    },*/
     child: Row(
       children: const [
         Icon(Icons.add),
@@ -437,6 +457,7 @@ Map? getObjectByAttribute(List arr, String target, String attribute) {
   return null;
 }
 
+//Future but can be completed multiple times.
 StreamController<List<String>> sidebarStream = StreamController<List<String>>.broadcast();
 
 class sideBarItem extends StatelessWidget {
@@ -477,7 +498,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.grey,
       ),
-
+      //Routes for navigating to pages
       initialRoute: '/',
       routes: {
         '/': (context) => const MyHomePage(title: 'Flutter Demo Home Page'),
@@ -500,6 +521,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+//Runs through character data and checks for affected resources and such. Runs every time a character webrequest has been made
 Future<Map?> compileCharacterData(Map? character, Map gameData) async {
   //log(character.toString());
   character ??= {};
@@ -534,17 +556,11 @@ Future<Map?> compileCharacterData(Map? character, Map gameData) async {
 
     }
   }
-
-  //log("Compiled:");
-  //log(character.toString());
-
   return character;
 }
 
 Map? getObjectByUID(Map? mapToCheck, String uid) {
   String uidType = uid.split("-/")[0];
-  //log(uidType);
-  //log(gameInfo[uidType].toString());
   if(mapToCheck== null) {
     return null;
   }
@@ -561,8 +577,6 @@ Map? getObjectByUID(Map? mapToCheck, String uid) {
 
 int? getObjectIndexByUID(Map? mapToCheck, String uid) {
   String uidType = uid.split("-/")[0];
-  //log(uidType);
-  //log(gameInfo[uidType].toString());
   if(mapToCheck== null) {
     return null;
   }
