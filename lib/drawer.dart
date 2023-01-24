@@ -17,16 +17,16 @@ class MyDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: Column(
-        children: [
-          const SizedBox(
-            height: 80.0,
-            child: DrawerHeader(
-              decoration: BoxDecoration(color: Colors.grey),
-              margin: EdgeInsets.all(0.0),
-              padding: EdgeInsets.all(0.0),
-              child: Center(
-                child:  Center(
+      child: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(
+              height: 56.0,
+              child: DrawerHeader(
+                decoration: BoxDecoration(color: Colors.grey),
+                margin: EdgeInsets.all(0.0),
+                padding: EdgeInsets.all(0.0),
+                child: Center(
                   child: Text(
                     'Acquire Menu',
                     style: TextStyle(
@@ -36,51 +36,51 @@ class MyDrawer extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-          FutureBuilder(
-            future: playerDataFuture,
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              if(!snapshot.hasData) {
-                return Center(
-                  child: Column(
-                    children: const [
-                      CircularProgressIndicator(),
-                      Text("Loading Player Data")
-                    ],
-                  ),
-                );
-              } else {
-                Map? localCharacter = getObjectByAttribute(snapshot.data["characters"], selectedCharacter, "id");
-                if(localCharacter == null) {
-                  return const Text("Could not find character by the selected name");
-                }
-                return FutureBuilder(
-                  future: gameDataFuture,
-                  builder: (BuildContext context, AsyncSnapshot snapshotGame) {
-                    if(!snapshotGame.hasData) {
-                      return Center(
-                        child: Column(
-                          children: const [
-                            CircularProgressIndicator(),
-                            Text("Loading Player Data")
-                          ],
-                        ),
-                      );
-                    } else {
-                      //log("Drawer");
-                      //log(snapshotGame.data.toString());
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: makeDrawerButtons(snapshotGame.data, localCharacter, context, snapshot.data["playerInfo"]["id"], snapshot.data["playerInfo"]["isAdmin"], mainSetState)
-                      );
+            FutureBuilder(
+                future: playerDataFuture,
+                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                  if(!snapshot.hasData) {
+                    return Center(
+                      child: Column(
+                        children: const [
+                          CircularProgressIndicator(),
+                          Text("Loading Player Data")
+                        ],
+                      ),
+                    );
+                  } else {
+                    Map? localCharacter = getObjectByAttribute(snapshot.data["characters"], selectedCharacter, "id");
+                    if(localCharacter == null) {
+                      return const Text("Could not find character by the selected name");
                     }
+                    return FutureBuilder(
+                        future: gameDataFuture,
+                        builder: (BuildContext context, AsyncSnapshot snapshotGame) {
+                          if(!snapshotGame.hasData) {
+                            return Center(
+                              child: Column(
+                                children: const [
+                                  CircularProgressIndicator(),
+                                  Text("Loading Player Data")
+                                ],
+                              ),
+                            );
+                          } else {
+                            //log("Drawer");
+                            //log(snapshotGame.data.toString());
+                            return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: makeDrawerButtons(snapshotGame.data, localCharacter, context, snapshot.data["playerInfo"]["id"], snapshot.data["playerInfo"]["isAdmin"], mainSetState)
+                            );
+                          }
+                        }
+                    );
                   }
-                );
-              }
-            }
-          ),
-          logOutButton(context)
-        ],
+                }
+            ),
+            logOutButton(context)
+          ],
+        ),
       ),
     );
   }
